@@ -1,8 +1,8 @@
 import { useLanguage } from "./Language.jsx";import { tr } from "./language.mjs";import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { normalizeUsername, validUsername, usernameHint } from './username.mjs';
-export default function AuthForm({ db, session, profile, onDone, onNotice, onProfileChange }) {useLanguage();
-  const [action, setAction] = useState(session ? 'username' : 'register'),[busy, setBusy] = useState(false),[error, setError] = useState('');
+export default function AuthForm({ db, session, profile, onDone, onNotice, onProfileChange,initialAction='register' }) {useLanguage();
+  const [action, setAction] = useState(session ? 'username' : initialAction),[busy, setBusy] = useState(false),[error, setError] = useState('');
   async function submit(e) {e.preventDefault();if (busy) return;setBusy(true);setError('');const f = Object.fromEntries(new FormData(e.currentTarget));
     try {
       if (!db) throw Error(tr("Isi konfigurasi Supabase di .env untuk mengaktifkan akun."));

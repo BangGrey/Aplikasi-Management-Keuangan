@@ -31,7 +31,7 @@ export function partnerQuotes(data,now=new Date()){
  const seen=new Set();return data.quotes.map(q=>{if(!['antam','pegadaian'].includes(q.source)||seen.has(q.source)||q.kind!=='buyback'||q.currency!=='IDR'||q.unit!=='gram')throw Error('Jenis feed partner tidak valid');seen.add(q.source);return validateQuote({source:q.source,price_per_gram:q.price_per_gram,source_date:q.source_date,observed_at:now.toISOString(),status:'ok',message:null,metadata:{basis:'Buyback per gram dari feed partner terkonfigurasi',url:q.source==='antam'?'https://www.logammulia.com/id/sell/gold':'https://pegadaian.co.id/harga-emas'}},now)});
 }
 async function get(url,request,token){
- const response=await request(url,{signal:AbortSignal.timeout(12000),headers:{'User-Agent':'Keuanganmu/1.0 (daily gold price monitor)',...(token?{Authorization:`Bearer ${token}`}:{})},redirect:'error'});
+ const response=await request(url,{signal:AbortSignal.timeout(12000),headers:{'User-Agent':'Tabunganmu/1.0 (daily gold price monitor)',...(token?{Authorization:`Bearer ${token}`}:{})},redirect:'error'});
  if(!response.ok)throw Error('Sumber tidak dapat diakses');const body=await response.text();if(body.length>2000000)throw Error('Respons terlalu besar');return body;
 }
 export async function collectGoldQuotes({request=fetch,now=new Date(),partnerUrl=process.env.GOLD_PARTNER_FEED_URL,partnerToken=process.env.GOLD_PARTNER_FEED_TOKEN}={}){

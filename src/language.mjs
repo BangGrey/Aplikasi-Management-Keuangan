@@ -1,4 +1,7 @@
-import english from './translations/en.json' with {type:'json'};
+import baseEnglish from './translations/en.json' with {type:'json'};
+import marketingEnglish from './translations/marketing-en.json' with {type:'json'};
+import experienceEnglish from './translations/experience-en.json' with {type:'json'};
+const english={...baseEnglish,...marketingEnglish,...experienceEnglish};
 let language='id';
 export const getLanguage=()=>language;
 export const getLocale=()=>language==='en'?'en-US':'id-ID';

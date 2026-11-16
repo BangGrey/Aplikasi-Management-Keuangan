@@ -1,13 +1,14 @@
 import React,{createContext,useContext,useEffect,useState} from 'react';
 import {Languages} from 'lucide-react';
 import {getLanguage,setLanguage,tr} from './language.mjs';
+import {APP_NAME} from './brand.mjs';
 import './language.css';
 const Context=createContext(null);
 function initial(){try{return localStorage.getItem('keuanganmu-language')==='en'?'en':'id'}catch{return 'id'}}
 export function LanguageProvider({children}){
  const [language,update]=useState(()=>setLanguage(initial()));
  function choose(value){const next=setLanguage(value);update(next);try{localStorage.setItem('keuanganmu-language',next)}catch{}}
- useEffect(()=>{document.documentElement.lang=language;document.title=language==='en'?'Keuanganmu — Your money, your little world':'Keuanganmu — Ruang kecil untuk mimpi besar';},[language]);
+ useEffect(()=>{document.documentElement.lang=language;document.title=APP_NAME+' — '+(language==='en'?'Your money, your little world':'Ruang kecil untuk mimpi besar');},[language]);
  return <Context.Provider value={{language,choose}}>{children}</Context.Provider>;
 }
 export function useLanguage(){return useContext(Context)||{language:getLanguage(),choose:setLanguage}}

@@ -24,9 +24,9 @@ test('model output cannot bypass transaction or date validation',()=>{
  assert.throws(()=>validateIntent({kind:'query',query_kind:'expense',from:null,to:'2026-02-30'},date));
  assert.throws(()=>validateIntent({kind:'delete'},date));
 });
-function fixture({allowed=true,refuse=false,paidUntil='2026-12-16T12:00:00Z',intent={kind:'transaction',type:'expense',title:'Ongkir',amount:5000,category:'Transportasi'}}={}){
+function fixture({allowed=true,refuse=false,paidUntil='2026-12-16T12:00:00Z',trialUntil=null,intent={kind:'transaction',type:'expense',title:'Ongkir',amount:5000,category:'Transportasi'}}={}){
  const calls=[];
- const builder={select(){return this},eq(key,value){calls.push([key,value]);return this},order(){return this},single:async()=>({data:{id:'user-a',paid_until:paidUntil},error:null}),limit:async()=>({data:[],error:null})};
+ const builder={select(){return this},eq(key,value){calls.push([key,value]);return this},order(){return this},single:async()=>({data:{id:'user-a',paid_until:paidUntil,trial_ends_at:trialUntil},error:null}),limit:async()=>({data:[],error:null})};
  const handler=createHandler({now:()=>Date.parse(date+'T12:00:00Z'),apiKey:()=> 'test-only',getAdmin:()=>({auth:{getUser:async()=>({data:{user:{id:'user-a'}},error:null})},rpc:async()=>({data:allowed,error:null}),from(table){calls.push(['table',table]);return builder}}),request:async(url,options)=>{
   calls.push(['provider',JSON.parse(options.body)]);
   return {ok:true,json:async()=>({status:'completed',output:[{type:'message',content:[refuse?{type:'refusal'}:{type:'output_text',text:JSON.stringify(intent)}]}]})};
@@ -63,14 +63,28 @@ test('AI savings intent returns only a validated proposal without reading or upd
  const invalid=fixture({intent:{kind:'savings_deposit',title:'Jepang',amount:-500000}});
  assert.equal((await invalid.handler(event)).statusCode,502);
 });
+test('AI goal creation keeps missing target separate from initial savings and receives only bounded draft context',async()=>{
+ const {handler,calls}=fixture({intent:{kind:'savings_create',title:'Rumah impian',amount:null,initial_saved:500000,type:null,category:null}});
+ const response=await handler({...event,body:JSON.stringify({text:'tabungan awal lima ratus ribu',today:date,goalDraft:{title:'Rumah impian',target:null,initialSaved:0}})});
+ assert.equal(response.statusCode,200);assert.deepEqual(JSON.parse(response.body).goal,{title:'Rumah impian',target:null,initialSaved:500000});
+ const payload=calls.find(c=>c[0]==='provider')[1];assert.ok(payload.instructions.includes('Rumah impian'));
+ assert.ok(!calls.some(([key,value])=>key==='table'&&['goals','transactions','assistant_goal_creations'].includes(value)));
+ const invalid=fixture();
+ assert.equal((await invalid.handler({...event,body:JSON.stringify({text:'hello',today:date,goalDraft:{title:'Rumah',target:null,initialSaved:-1}})})).statusCode,400);
+ assert.ok(!invalid.calls.some(c=>c[0]==='provider'));
+});
 test('API blocks quota exhaustion and handles refusals without writes',async()=>{
  const limited=fixture({allowed:false});assert.equal((await limited.handler(event)).statusCode,429);assert.ok(!limited.calls.some(c=>c[0]==='provider'));
  const refused=fixture({refuse:true});assert.equal((await refused.handler(event)).statusCode,502);
  assert.equal((await refused.handler({...event,headers:{}})).statusCode,401);
  assert.equal((await refused.handler({...event,body:'!'})).statusCode,400);
 });
-test('API blocks trial-only and expired subscribers before calling OpenAI',async()=>{
+test('API blocks accounts without active paid or trial access before calling OpenAI',async()=>{
  for(const paidUntil of [null,'2026-11-15T12:00:00Z','2026-11-16T12:00:00Z']){
   const blocked=fixture({paidUntil});assert.equal((await blocked.handler(event)).statusCode,403);assert.ok(!blocked.calls.some(c=>c[0]==='provider'));
  }
+});
+test('API permits active Premium trials and rejects them once expired',async()=>{
+ const trial=fixture({paidUntil:null,trialUntil:'2026-11-23T12:00:00Z'});assert.equal((await trial.handler(event)).statusCode,200);assert.ok(trial.calls.some(c=>c[0]==='provider'));
+ const expired=fixture({paidUntil:null,trialUntil:date+'T12:00:00Z'});assert.equal((await expired.handler(event)).statusCode,403);assert.ok(!expired.calls.some(c=>c[0]==='provider'));
 });

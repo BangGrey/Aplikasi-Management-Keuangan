@@ -1,8 +1,31 @@
-# Keuanganmu 🌱
+# Tabunganmu 🌱
 
 Aplikasi manajemen keuangan dalam Bahasa Indonesia dan English: React + Vite, Supabase Auth/Postgres, Midtrans Snap, dan Netlify Functions.
 
 Untuk pemasangan pertama, ikuti [panduan konfigurasi bertahap sebelum deploy](SETUP.md).
+
+Identitas aplikasi adalah **Tabunganmu**. Footer halaman pengenalan dan aplikasi menampilkan copyright dengan tahun otomatis serta bantuan melalui **[tabunganmusupport@gmail.com](mailto:tabunganmusupport@gmail.com)**. Nama ini juga digunakan pada judul tab, nota, ekspor CSV, dan deskripsi pembayaran. Bucket avatar dan kunci preferensi yang sudah ada tetap dipertahankan agar foto serta pengaturan pengguna tetap terhubung. Penggantian nama tidak memerlukan migrasi SQL.
+
+## Halaman pengenalan dan paket Premium
+
+Pengunjung tanpa sesi membuka halaman pengenalan terlebih dahulu: fitur, pratinjau aplikasi, alasan membuat akun, perbedaan trial/Premium, harga, dan tanya jawab. Tombol **Masuk** membuka formulir login; **Daftar gratis** membuka registrasi. **Jelajahi demo** membuka dashboard dengan data contoh melalui `#demo`. Pengguna yang sudah masuk langsung membuka aplikasinya. Pilihan Bahasa Indonesia/English juga tersedia pada halaman pengenalan.
+
+Ilustrasi utama berupa **slideshow enam gambar fitur**: ringkasan, transaksi, target tabungan, emas, asisten, dan tema. Gambar otomatis berganti setiap 6 detik serta dapat dipilih melalui tab, tombol sebelumnya/berikutnya, atau usapan horizontal di ponsel. Tombol jeda/putar mengontrol rotasi; rotasi juga berhenti sementara saat hover/fokus, tab browser tersembunyi, atau slideshow di luar layar. Preferensi reduced motion memulai slideshow dalam keadaan dijeda.
+
+Gambar lokal di `public/previews/` tersedia dalam Bahasa Indonesia dan English, menggunakan **data ilustrasi, bukan data akun atau harga emas terkini**. Ubah sumber di `scripts/generate-feature-previews.mjs`, lalu jalankan `npm.cmd run generate:previews` untuk memperbarui kedua versi bahasa. Gambar yang sudah dihasilkan ikut build/deploy tanpa perlu API atau SQL tambahan.
+
+Jalankan **`supabase/subscription-plans.sql` sebelum deploy checkout baru**. Migrasi menambahkan identitas/durasi paket pada `orders`, memperbarui constraint harga, dan mengubah RPC aktivasi agar mengikuti paket yang dibayar. Pesanan lama tetap menjadi paket 30 hari; status paid dan tanggal aktif yang ada tidak direset.
+
+| Paket | Harga | Durasi ditambahkan |
+|---|---:|---|
+| 30 hari | Rp29.000 | 30 hari |
+| 3 bulan | Rp60.000 | 3 bulan kalender |
+| 6 bulan | Rp150.000 | 6 bulan kalender |
+| 1 tahun | Rp299.000 | 12 bulan kalender |
+
+Pengguna Premium melihat **Perpanjang**, tanggal berakhir, dan perkiraan masa aktif setelah pembayaran. Paket baru ditambahkan dari `max(paid_until, now())`; sisa masa aktif tidak hilang. Pada akhir bulan, tanggal mengikuti batas bulan tujuan (misalnya 31 Januari + 3 bulan = 30 April). Jika sudah kedaluwarsa, aktivasi dimulai ketika pembayaran diverifikasi. Pembayaran sekali, tanpa tagihan atau perpanjangan otomatis.
+
+Frontend hanya mengirim `planId`; harga dan durasi ditentukan katalog server `src/subscription-plans.mjs` dan dibatasi lagi oleh SQL. Midtrans menerima nominal yang sama dengan pesanan. Webhook memverifikasi tanda tangan, mengambil status langsung dari Midtrans, mencocokkan nominal/order, lalu menjalankan RPC server. Klik tombol bayar atau kembali dari Midtrans tidak langsung mengaktifkan Premium. Memilih paket pada halaman pengenalan meminta pengguna mendaftar/masuk, kemudian memilih pembayaran dari akun.
 
 ## Pilihan bahasa
 
@@ -18,6 +41,19 @@ Contoh: target **Liburan ke Jepang** sudah tersedia, lalu pengguna berkata **“
 
 Setoran hanya memperbarui progres target tabungan rupiah, sesuai tombol Sisihkan. Tidak otomatis mencatat pemasukan/pengeluaran, mengurangi saldo rupiah, membuat target baru, atau mengubah tabungan emas. Intent tabungan dari OpenAI selalu ditampilkan untuk diperiksa sebelum disimpan. Jika respons gagal setelah penyimpanan, gunakan tombol **Coba lagi** pada pesan yang sama; ID permintaan disimpan bersama chat di browser.
 
+### Membuat target tabungan lewat percakapan
+
+Jalankan tambahan **`supabase/assistant-goals.sql` setelah `premium.sql`**. Asisten kini membedakan pembuatan target dan setoran ke target yang sudah ada. Contoh percakapan:
+
+1. **“Aku ingin membuat tabungan untuk membeli rumah impian.”** → asisten menyiapkan draf dan menanyakan total target dana.
+2. **“Rumah impian tabungan awal 500000.”** → menyimpan saldo awal Rp500.000 di draf, lalu tetap menanyakan total target; nominal awal tidak dianggap harga rumah.
+3. **“Target 500 juta.”** → menampilkan kartu Rumah impian, target Rp500.000.000, tabungan awal Rp500.000.
+4. Pilih **Buat tabungan ini** → target dibuat di akun dan ringkasan/tabungan langsung diperbarui.
+
+Draf tersimpan di browser sampai disimpan atau dibatalkan. Koreksi seperti `tabungan awal 750000` memperbarui pratinjau yang belum dikirim. Ketik `Batal` untuk membuang draf. Perintah lengkap `buat tabungan rumah impian target 500 juta, tabungan awal 500000` dan bahasa Inggris juga didukung. Jika tabungan awal tidak disebutkan, pratinjau menampilkan Rp0. Pembuatan selalu perlu tombol konfirmasi; hanya pesan berhasil dari server yang menyatakan target sudah dibuat. Retry memakai ID tetap, termasuk setelah reload, dan tidak membuat ulang target yang kemudian dihapus.
+
+Untuk AI lanjutan, hanya pesan saat ini, memori kategori, serta nama/target/saldo awal dari draf aktif yang dikirim. Daftar transaksi, daftar target tabungan yang tersimpan, dan riwayat chat tidak dikirim. Parser lokal tetap menangani contoh di atas tanpa panggilan API.
+
 ## Tabungan emas
 
 Menu **Tabungan → Tabungan emas** meminta jumlah gram saja. Pilih sumber buyback di halaman, lalu semua estimasi dihitung otomatis; tersedia juga riwayat harga harian. Jalankan `supabase/gold.sql` setelah migrasi sebelumnya. Harga otomatis memakai scheduled function `gold-price-sync` pada 09.00 dan 14.00 WIB, lalu frontend membaca cache Supabase.
@@ -28,13 +64,13 @@ Tombol **Catat emas** memiliki pilihan **Tambah** atau **Kurang**. Mode Kurang m
 
 ## Akses gratis dan premium
 
-Tema pastel tersedia untuk semua akun, termasuk demo/trial. Semua tema karakter beserta dekorasinya serta seluruh asisten keuangan (parser lokal, ringkasan lewat chat, nama, pembelajaran, dan OpenAI) khusus **langganan berbayar aktif**, berdasarkan `profiles.paid_until > now()`. Trial 7 hari hanya mencakup pencatatan manual dan tabungan sesuai aturan awal, bukan asisten atau tema karakter.
+**Trial 7 hari membuka seluruh fitur Premium**, termasuk semua tema karakter, chat asisten, nama asisten, ringkasan, pembuatan/setoran target, pembelajaran kategori, dan AI lanjutan bila API telah dikonfigurasi. Akses berlaku jika `paid_until > now()` atau `trial_ends_at > now()`, dengan akun yang cocok dengan sesi. Demo tanpa akun tetap memakai tema pastel dan asisten terkunci.
 
-Jalankan `supabase/premium.sql` **terakhir**, setelah migrasi lain. Jika database sudah terpasang, cukup jalankan file tambahan ini. Jangan menjalankan ulang `assistant.sql`/`learning.sql` setelahnya tanpa menerapkan `premium.sql` lagi, karena keduanya memuat kebijakan akses versi awal. Tidak ada data atau trial yang dihapus/reset oleh migrasi premium.
+Untuk database yang sudah terpasang, jalankan **`supabase/trial-premium.sql` setelah `premium.sql`**. Tanggal signup, trial, dan langganan yang ada tetap dipertahankan; migrasi tidak memulai ulang trial yang sudah habis. Untuk proyek baru, jalankan urutan di SETUP.md. Jika mengulang assistant.sql/learning.sql, terapkan premium.sql dan trial-premium.sql lagi agar aturan akses/kuota konsisten.
 
-Tema karakter menampilkan pratinjau terkunci dan tombol upgrade. Preferensi tema yang tersimpan tidak memberikan akses: saat keluar, beralih akun gratis, atau langganan kedaluwarsa, halaman memakai tema pastel terakhir (fallback Sage Garden). Preferensi karakter dapat dipakai kembali ketika langganan aktif. Asisten yang terkunci tidak memuat chat/memori atau menjalankan parser. Masa aktif diperiksa saat halaman berjalan dan profil diperbarui ketika fokus kembali atau setiap 60 detik; setelah pembayaran pengguna juga dapat menekan Perbarui status pembayaran.
+Tema karakter terbuka selama trial atau langganan aktif. Ketika kedua masa akses berakhir atau pengguna keluar, tampilan kembali ke pastel terakhir (fallback Sage Garden) dan asisten terkunci. Preferensi karakter dapat digunakan kembali saat akses aktif. Masa akses diperiksa saat halaman berjalan; profil diperbarui ketika fokus kembali atau setiap 60 detik. Status **Trial Premium** dibedakan dari **Premium** berbayar, sehingga trial tidak dianggap pembayaran dan tidak menampilkan tanggal paid_until yang kosong.
 
-Database membatasi nama/memori asisten, koreksi kategori, penyimpanan dan pembacaan transaksi melalui RPC asisten; API memeriksa premium sebelum memanggil OpenAI. Kuota AI juga hanya untuk akun berbayar. Hak pencatatan manual/trial tidak diubah. Pengguna tetap memiliki hak penghapusan data memorinya sendiri melalui kebijakan database meskipun tidak lagi premium.
+Database dan API memeriksa akses trial/Premium sebelum menjalankan fitur asisten. Kuota AI lanjutan tetap **50 permintaan per hari per akun** untuk trial maupun pelanggan berbayar. Parser lokal tidak memakai kuota API. Foto profil, username, password, dan hak penghapusan memori pribadi tetap tersedia setelah masa akses berakhir. Pembayaran/perpanjangan tetap berdasarkan paid_until; trial tidak membuat pesanan berbayar.
 
 ## Email atau username untuk login
 
@@ -44,17 +80,21 @@ Tambahkan `SUPABASE_ANON_KEY` ke environment Functions dengan nilai publishable/
 
 ## Profil dan pengaturan akun
 
-Buka **Profil** di menu, avatar kanan atas, atau kartu akun sidebar. Label **Premium** mengikuti langganan berbayar aktif pada `profiles.paid_until`; pengguna tanpa masa aktif, termasuk trial, mendapat label **Pengguna Biasa**. Profil menampilkan email dan batas masa aktif. Badge yang sama terlihat di header/sidebar. Tidak ada tombol untuk menaikkan status premium sendiri di profil.
+Buka **Profil** di menu, avatar kanan atas, atau kartu akun sidebar. Label **Premium** mengikuti langganan berbayar aktif; **Trial Premium** mengikuti trial aktif tanpa langganan berbayar. Jika keduanya habis, label menjadi **Pengguna Biasa**. Profil, header, dan sidebar memakai status yang sama. Tanggal akses tetap dikelola server.
 
 Form username menggunakan RPC `set_username` dari migrasi `username.sql`, memperbarui nama akun di tampilan, dan menangani username duplikat. Form password meminta password saat ini, password baru minimal 8 karakter, dan konfirmasi. Password saat ini diverifikasi melalui klien Supabase Auth sementara dengan penyimpanan sesi dimatikan; ID akun harus cocok sebelum memperbarui password. Klien verifikasi sementara dikeluarkan dengan scope lokal tanpa sengaja mengeluarkan sesi utama. Password tidak dicatat di tabel profil, log aplikasi, atau localStorage.
 
 Jika Supabase meminta reautentikasi untuk **Secure password change**, form menampilkan pengiriman kode email dan kolom kode (`nonce`). Pengiriman email harus sudah berfungsi. Kebijakan password Supabase yang lebih ketat tetap berlaku. Pengaturan username/password tersedia untuk pengguna biasa maupun premium, termasuk setelah trial berakhir. Ini bukan alur lupa password; pengguna harus masih login dan mengetahui password saat ini.
 
-Tidak perlu migrasi baru untuk halaman profil bila `username.sql` sudah diterapkan. Detail API: [Supabase updateUser](https://supabase.com/docs/reference/javascript/auth-updateuser), [password security](https://supabase.com/docs/guides/auth/password-security). Uji perubahan username, password salah, ketidaksamaan konfirmasi, password benar, email nonce, akun trial, dan akun premium secara langsung sebelum produksi. Build/unit test menggunakan mock Auth; browser dan perubahan akun nyata belum diuji tanpa kredensial layanan.
+Untuk foto profil, jalankan **`supabase/profile-avatars.sql`**. Menu Profil menyediakan Tambah/Ganti foto, pratinjau, Simpan foto, dan Hapus foto. Mendukung JPG/PNG/WebP maksimal 2 MB; browser memotong tengah menjadi 512×512 dan menyimpan JPEG. Foto tampil pada profil, sidebar, header, serta pesan pengguna dalam chat. Foto tidak dikirim ke OpenAI.
+
+Bucket `keuanganmu-avatars` bersifat privat. RLS memisahkan folder per auth.uid(); RPC hanya mengubah avatar akun sendiri tanpa memberikan hak mengubah paid_until/trial. URL bertanda tangan berlaku 1 jam dan diperbarui selama halaman terbuka. Penggantian menautkan foto baru sebelum membersihkan file lama. Jika respons RPC terputus setelah commit, file baru tidak dihapus agar referensi profil tetap valid; unggahan yang belum terpakai dapat tertinggal privat sampai dibersihkan. Akses mengikuti [Supabase Storage RLS](https://supabase.com/docs/guides/storage/security/access-control) dan [signed URLs](https://supabase.com/docs/reference/javascript/storage-from-createsignedurl).
+
+Username/password tetap memakai username.sql dan Supabase Auth. Uji layanan nyata setelah konfigurasi; pengujian otomatis memakai DOM, mock Auth/Storage, serta PostgreSQL lokal untuk RPC/RLS.
 
 ## Koleksi tema
 
-Menu **Tema tampilan** menyediakan 12 pilihan: Sage Garden, Strawberry Milk, Lavender Dream, Peachy Days, Hello Kitty, Cinnamoroll, Kuromi, Lotso, My Melody, Pompompurin, Keroppi, dan Pochacco. Galeri bisa difilter ke karakter lucu atau warna pastel. Pilihan langsung mengubah palet, grafik, progres tabungan, tombol/chat, motif latar, dan dekorasi sidebar, kemudian disimpan di browser melalui `kantong-theme`.
+Menu **Tema tampilan** menyediakan **20 tema: 4 pastel dan 16 karakter**. Karakter mencakup Hello Kitty, Cinnamoroll, Kuromi, Lotso, My Melody, Pompompurin, Keroppi, Pochacco, **SpongeBob, Golden Pup, Mochi Cat, Ducky Days, Cozy Capybara, Bamboo Panda, Peach Axolotl, dan Snow Penguin**. Galeri dapat difilter, lalu pilihan mengubah palet, grafik, dekorasi, dan avatar asisten. Setiap pesan asisten memiliki avatar karakter tema aktif dan nama asisten; pesan pengguna memakai username dan foto profil.
 
 Dekorasi karakter berupa ilustrasi vektor sederhana yang dibuat di kode, tanpa ketergantungan gambar eksternal. Katalog dan palet ada di `src/themes.mjs`, dekorasi di `src/ThemeCharacter.jsx`, dan galeri di `src/ThemePicker.jsx`. Tema tidak memerlukan migrasi Supabase atau biaya API. Pilihan berlaku di browser tersebut dan belum disinkronkan antar perangkat.
 
@@ -87,10 +127,10 @@ RLS membatasi setiap pengguna ke data sendiri. Pengguna trial/lunas dapat menuli
 3. Redeploy sesudah mengubah environment variables.
 4. Di dashboard Midtrans Sandbox → Settings → Configuration, atur Payment Notification URL ke `https://DOMAIN-ANDA.netlify.app/.netlify/functions/midtrans-webhook`.
 5. Daftar akun, konfirmasi email, masuk, pilih Langganan. Pembayaran membuka hosted Snap Midtrans. Client key tidak diperlukan karena menggunakan redirect Snap.
-6. Uji pembayaran Sandbox sampai settlement dan kirim ulang notifikasi yang sama. Pastikan paid_until bertambah 30 hari tepat sekali. Klik “Perbarui status pembayaran” atau muat ulang setelah kembali dari Midtrans.
+6. Uji pembayaran Sandbox setiap paket sampai settlement dan kirim ulang notifikasi yang sama. Pastikan paid_until bertambah sesuai paket tepat sekali. Uji pula akun Premium aktif untuk memastikan sisa masa aktif tetap terhitung. Klik “Perbarui status pembayaran” atau muat ulang setelah kembali dari Midtrans.
 7. Untuk produksi, gunakan server key produksi, ubah `MIDTRANS_IS_PRODUCTION=true`, dan atur webhook pada dashboard produksi. Uji ulang sebelum menerima pelanggan.
 
-Harga awal Rp29.000 untuk 30 hari, pembayaran manual tanpa penagihan otomatis. Untuk mengubahnya, selaraskan `checkout.mjs`, constraint `orders.amount` di SQL, dan teks UI. Mengubah harga tidak dilakukan melalui request browser. Verifikasi notifikasi menggunakan SHA-512, kemudian memeriksa status langsung ke API Midtrans dan mencocokkan nilai pesanan. Aktivasi menggunakan transaksi database dan kunci baris untuk mencegah duplikasi.
+Pilihan harga mengikuti katalog pada bagian paket Premium. Jika mengubahnya, selaraskan `src/subscription-plans.mjs` dan constraint paket dalam SQL sambil mempertahankan kompatibilitas pesanan yang belum selesai. Detail request pembayaran mengikuti [objek Snap Midtrans](https://docs.midtrans.com/reference/json-objects); verifikasi akhir menggunakan [Get Transaction Status](https://docs.midtrans.com/reference/get-transaction-status). Aktivasi memakai transaksi database dan kunci baris untuk mencegah duplikasi.
 
 ## Batas verifikasi
 
@@ -100,7 +140,9 @@ Build dan unit test dapat dijalankan tanpa akun layanan. Auth, RLS, email, pemba
 
 Asisten dibuka melalui karakter di kanan atas bagian judul halaman. Bubble “Aku bisa bantu kamu” berada di atas karakter; karakter mengikuti tema aktif, sedangkan tema pastel memakai robot netral. Karakter memiliki animasi gerakan ringan dan melambaikan tangan; mode pengurangan gerakan perangkat menonaktifkan animasi. Klik karakter untuk membuka panel chat di bagian atas, terpisah dari badge hosting kanan bawah. Tombol Escape menutup panel dan mengembalikan fokus ke karakter. Akun nonpremium membuka informasi upgrade, sementara fungsi asisten tetap hanya untuk pelanggan premium. Perubahan ini tidak menghapus badge milik penyedia hosting.
 
-Jalankan `supabase/assistant.sql` di SQL Editor setelah `schema.sql`, untuk proyek baru maupun yang sudah ada. Migrasi ini boleh dijalankan ulang. Nama asisten disimpan per akun dalam tabel `assistant_preferences` dengan RLS; akses asisten memerlukan langganan premium berbayar aktif setelah migrasi premium.sql diterapkan. Tanpa migrasi, chat akun menampilkan pemberitahuan konfigurasi dan tidak menerima perintah. Demo pencatatan manual dapat digunakan tanpa Supabase; asisten khusus langganan premium berbayar.
+Asisten mengambang memakai ilustrasi tubuh khusus untuk masing-masing dari 16 karakter di `src/CompanionCharacter.jsx`. Kepala dan tubuh berada dalam satu SVG: SpongeBob dengan celana kotak, dasi, kaus kaki dan sepatu; Hello Kitty dengan overall; Kuromi dengan tubuh hitam dan ekor; Cinnamoroll dengan tubuh putih dan ekor melingkar; serta anjing/kucing dengan kaki dan ekor, bebek dengan sayap/kaki berselaput, dan bentuk khas karakter lainnya. Wajah menggunakan gambar tema yang sama dengan avatar chat. Animasi bergerak bersama, dengan gerakan tambahan pada tangan, sayap, atau ekor; tema pastel memiliki robot utuh. Tidak memerlukan migrasi SQL atau gambar dari server lain.
+
+Jalankan `supabase/assistant.sql` di SQL Editor setelah `schema.sql`, untuk proyek baru maupun yang sudah ada. Migrasi ini boleh dijalankan ulang. Nama asisten disimpan per akun dalam tabel `assistant_preferences` dengan RLS; akses asisten memerlukan trial Premium atau langganan aktif setelah premium.sql/trial-premium.sql diterapkan. Tanpa migrasi, chat akun menampilkan pemberitahuan konfigurasi dan tidak menerima perintah. Demo pencatatan manual dapat digunakan tanpa Supabase; asisten tersedia untuk trial Premium dan langganan aktif.
 
 Klik tombol chat di kanan bawah:
 
@@ -126,7 +168,7 @@ Contoh pesan ke asisten:
 
 Saldo adalah saldo **tercatat**, bukan saldo bank, dan tidak memasukkan progres target tabungan. Jika periode tertentu disebutkan untuk saldo/ringkasan, jawaban memakai istilah **selisih periode**, bukan saldo akumulatif. Periode kalender eksplisit mencakup seluruh hari dalam rentang yang ditampilkan. Periode yang belum didukung (misalnya “7 hari terakhir”) diminta untuk ditulis ulang; tidak ditebak. Pertanyaan tidak membuat transaksi atau nota.
 
-Mode akun mengambil ulang data milik pengguna dari Supabase untuk tiap pertanyaan dan membaca secara bertahap agar tidak berhenti pada batas 1.000 baris default. Asisten tidak tersedia dalam mode demo atau trial. Fitur asisten memerlukan langganan premium berbayar aktif. Memori kategori dan AI lanjutan memerlukan migrasi `learning.sql` tambahan. Pengujian otomatis mencakup pemasukan, rentang inklusif, batas tahun, Februari kabisat, saldo negatif, dan periode tanpa data; koneksi langsung serta dialog browser tetap membutuhkan pengujian akun layanan.
+Mode akun mengambil ulang data milik pengguna dari Supabase untuk tiap pertanyaan dan membaca secara bertahap agar tidak berhenti pada batas 1.000 baris default. Asisten tersedia selama trial Premium atau langganan aktif; mode demo tanpa akun tetap terkunci. Memori kategori dan AI lanjutan memerlukan learning.sql dan pemeriksaan akses/kuota terbaru. Pengujian otomatis mencakup pemasukan, rentang inklusif, batas tahun, Februari kabisat, saldo negatif, dan periode tanpa data; koneksi layanan nyata tetap diuji setelah konfigurasi akun.
 
 ### Pembelajaran pribadi, komunitas, dan OpenAI
 
