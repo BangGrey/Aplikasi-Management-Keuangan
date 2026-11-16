@@ -1,4 +1,4 @@
-# Kantong 🌱
+# Keuanganmu 🌱
 
 Aplikasi manajemen keuangan berbahasa Indonesia: React + Vite, Supabase Auth/Postgres, Midtrans Snap, dan Netlify Functions.
 

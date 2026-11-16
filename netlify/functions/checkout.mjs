@@ -10,7 +10,7 @@ export async function handler(event){
   const orderId=`KT-${randomUUID()}`,amount=29000;
   const {error:insertError}=await db.from('orders').insert({id:orderId,user_id:user.id,amount,status:'pending'});
   if(insertError)throw insertError;
-  const response=await fetch(`https://app.${production()?'':'sandbox.'}midtrans.com/snap/v1/transactions`,{method:'POST',headers:{Authorization:authHeader(),'Content-Type':'application/json'},body:JSON.stringify({transaction_details:{order_id:orderId,gross_amount:amount},customer_details:{email:user.email},item_details:[{id:'kantong-30',price:amount,quantity:1,name:'Kantong Plus 30 hari'}],callbacks:{finish:process.env.URL},expiry:{unit:'minutes',duration:60}})});
+  const response=await fetch(`https://app.${production()?'':'sandbox.'}midtrans.com/snap/v1/transactions`,{method:'POST',headers:{Authorization:authHeader(),'Content-Type':'application/json'},body:JSON.stringify({transaction_details:{order_id:orderId,gross_amount:amount},customer_details:{email:user.email},item_details:[{id:'kantong-30',price:amount,quantity:1,name:'Keuanganmu Plus 30 hari'}],callbacks:{finish:process.env.URL},expiry:{unit:'minutes',duration:60}})});
   const data=await response.json();
   if(!response.ok||!data.redirect_url)throw Error('Pembayaran belum tersedia');
   return json(200,{redirect_url:data.redirect_url});

@@ -1,0 +1,5 @@
+.brand{gap:10px;letter-spacing:-.8px;min-width:0;font-size:22px;line-height:1.2}.brand-mark{display:block;flex-shrink:0;width:44px;height:44px;color:var(--accent);filter:drop-shadow(0 3px 4px #253f2414)}.brand-word{display:block;color:#354133;font-weight:800;white-space:nowrap}.brand-word strong{color:var(--accent);font-weight:800}.receipt-logo .brand-mark{width:40px;height:40px}.receipt-logo>strong{font-family:Manrope,sans-serif;font-size:25px;letter-spacing:-1px;color:var(--accent)}
+@media(max-width:1200px){.brand{font-size:20px;gap:8px}.brand .brand-mark{width:38px;height:38px}}
+@media(min-width:651px) and (max-width:900px){.brand{font-size:17px;gap:6px}.brand .brand-mark{width:34px;height:34px}}
+@media(max-width:650px){.brand{font-size:23px;gap:10px}.brand .brand-mark{width:44px;height:44px}}
+@media print{.receipt-logo .brand-mark{filter:none}}

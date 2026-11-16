@@ -1,0 +1,5 @@
+import React from 'react';
+// Shared vector mark for the app and receipts; color follows the active theme.
+export default function BrandMark({className=''}){
+ return <svg className={`brand-mark ${className}`} viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="1" y="1" width="46" height="46" rx="15" fill="currentColor"/><path d="M4 17Q4 4 18 4H33" stroke="white" strokeOpacity=".14" strokeWidth="2" strokeLinecap="round"/><path d="M13 19L31 13Q34 12 35 16L36 24" fill="white" fillOpacity=".22" stroke="white" strokeOpacity=".65" strokeWidth="1.6"/><circle cx="27" cy="15" r="6" fill="#F2D798"/><path d="M27 12V18M25 13.5H28Q30 14 27 15Q24 16 26 16.5H29" stroke="#9C7940" strokeWidth="1.1" strokeLinecap="round"/><rect x="11" y="20" width="27" height="18" rx="6" fill="white" fillOpacity=".94"/><path d="M34 25H38V33H34Q30 33 30 29Q30 25 34 25Z" fill="currentColor" fillOpacity=".15"/><circle cx="34" cy="29" r="1.6" fill="currentColor"/><path d="M16 32H23" stroke="currentColor" strokeOpacity=".35" strokeWidth="2" strokeLinecap="round"/><path d="M38 9V15M35 12H41" stroke="#F8E8BD" strokeWidth="1.8" strokeLinecap="round"/></svg>;
+}

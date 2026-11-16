@@ -38,7 +38,7 @@ order by tablename;
 1. Buka Authentication, cari konfigurasi provider/sign-in, aktifkan Email dan pendaftaran pengguna. Gunakan email + password, sesuai aplikasi saat ini.
 2. Aktifkan Confirm email.
 3. Di Authentication → URL Configuration, sementara isi Site URL `http://localhost:5173`. Tambahkan `http://localhost:5173` dan `http://localhost:5173/**` ke Redirect URLs. Jika server berjalan pada port lain, tambahkan URL port tersebut juga.
-4. Atur SMTP di pengaturan email Authentication: sender email, sender name (misalnya Kantong), host, port, username, dan password dari penyedia SMTP Anda. Ikuti pengaturan dan verifikasi domain milik penyedia; jangan menebak nilainya.
+4. Atur SMTP di pengaturan email Authentication: sender email, sender name (misalnya Keuanganmu), host, port, username, dan password dari penyedia SMTP Anda. Ikuti pengaturan dan verifikasi domain milik penyedia; jangan menebak nilainya.
 5. Email bawaan Supabase membatasi penerima ke email anggota tim proyek dan tidak cocok untuk pendaftaran publik. Untuk tes awal tanpa SMTP, gunakan alamat email anggota organisasi Supabase. Sebelum menerima pengguna lain, pastikan SMTP sudah berfungsi.
 6. Setelah domain Netlify tersedia nanti, ubah Site URL ke URL HTTPS tersebut dan tambahkan URL domain itu beserta `/**` ke Redirect URLs. Pertahankan localhost untuk pengembangan bila masih diperlukan.
 
