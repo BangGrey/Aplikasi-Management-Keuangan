@@ -1,0 +1,8 @@
+{
+  "Kirim ulang email konfirmasi": "Resend confirmation email",
+  "Kirim ulang konfirmasi": "Resend confirmation",
+  "Belum menerima email konfirmasi?": "Haven't received your confirmation email?",
+  "Jika email tersebut terdaftar dan belum dikonfirmasi, tautan konfirmasi baru akan dikirim. Periksa inbox dan spam, lalu gunakan email terbaru.": "If this email is registered and awaiting confirmation, a new confirmation link will be sent. Check your inbox and spam folder, then use the latest email.",
+  "Email belum dikonfirmasi. Pilih Kirim ulang email konfirmasi untuk mendapatkan tautan baru.": "Your email is not confirmed. Select Resend confirmation email to request a new link.",
+  "Terlalu banyak permintaan email. Tunggu sebentar sebelum mencoba lagi.": "Too many email requests. Please wait a while before trying again."
+}

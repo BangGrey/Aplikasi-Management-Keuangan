@@ -51,6 +51,20 @@ order by tablename;
 
 Referensi: [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls), [SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
 
+### Jika email konfirmasi membuka localhost atau muncul otp_expired
+
+Untuk website produksi saat ini, buka **Authentication → URL Configuration** di proyek Supabase yang digunakan Netlify:
+
+- **Site URL**: `https://ruangkeuanganmu.netlify.app`
+- **Redirect URLs**: tambahkan `https://ruangkeuanganmu.netlify.app` dan `https://ruangkeuanganmu.netlify.app/`, lalu simpan. Kedua bentuk ini mencakup origin yang dikirim aplikasi dan alamat root website. Jika memakai domain sendiri nanti, ganti/tambahkan domain tersebut juga.
+- Localhost boleh tetap menjadi redirect tambahan untuk pengembangan; Site URL produksi harus domain publik.
+
+Pendaftaran dan pengiriman ulang menggunakan `emailRedirectTo` dari origin website yang dibuka. Jika pengalihan yang diminta tidak ada dalam allowlist, Supabase dapat memakai Site URL. Jika template email pernah diubah, periksa **Authentication → Email Templates → Confirm signup**: tautan konfirmasi harus memuat verifikasi, misalnya `<a href="{{ .ConfirmationURL }}">Konfirmasi email</a>`. Tautan yang hanya menuju Site URL tidak memverifikasi akun.
+
+Setelah menyimpan konfigurasi, buka website Netlify → **Masuk → Belum menerima email konfirmasi?**, masukkan email pendaftaran, lalu tekan **Kirim ulang konfirmasi**. Buka tautan dari email terbaru. Tautan yang tidak valid, kedaluwarsa, atau telah dipakai tidak menjadi valid hanya dengan mengganti alamat localhost di browser. Jika akun sudah dikonfirmasi, cukup masuk dengan email/username dan password. Mengubah Site URL/Redirect URLs tidak memerlukan migrasi SQL atau deploy; tombol pengiriman ulang tersedia setelah kode aplikasi terbaru di-deploy.
+
+Jika tautan baru langsung kedaluwarsa sebelum dipakai, periksa Auth Logs, pengaturan masa berlaku email OTP, dan kemungkinan pemindai keamanan email yang membuka tautan lebih dahulu. Referensi: [Email templates dan email prefetching](https://supabase.com/docs/guides/auth/auth-email-templates), [resend](https://supabase.com/docs/reference/javascript/auth-resend), [Auth error codes](https://supabase.com/docs/guides/auth/debugging/error-codes).
+
 ## 3. Ambil URL dan kunci Supabase
 
 Cari **Connect** / Project Settings → Data API untuk Project URL, serta Project Settings → API Keys untuk kunci. Project URL berbentuk `https://PROJECT-ID.supabase.co`, bukan URL halaman dashboard dan bukan connection string Postgres.
