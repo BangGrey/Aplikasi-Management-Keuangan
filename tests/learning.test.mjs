@@ -24,12 +24,12 @@ test('model output cannot bypass transaction or date validation',()=>{
  assert.throws(()=>validateIntent({kind:'query',query_kind:'expense',from:null,to:'2026-02-30'},date));
  assert.throws(()=>validateIntent({kind:'delete'},date));
 });
-function fixture({allowed=true,refuse=false,paidUntil='2026-12-16T12:00:00Z'}={}){
+function fixture({allowed=true,refuse=false,paidUntil='2026-12-16T12:00:00Z',intent={kind:'transaction',type:'expense',title:'Ongkir',amount:5000,category:'Transportasi'}}={}){
  const calls=[];
  const builder={select(){return this},eq(key,value){calls.push([key,value]);return this},order(){return this},single:async()=>({data:{id:'user-a',paid_until:paidUntil},error:null}),limit:async()=>({data:[],error:null})};
  const handler=createHandler({now:()=>Date.parse(date+'T12:00:00Z'),apiKey:()=> 'test-only',getAdmin:()=>({auth:{getUser:async()=>({data:{user:{id:'user-a'}},error:null})},rpc:async()=>({data:allowed,error:null}),from(table){calls.push(['table',table]);return builder}}),request:async(url,options)=>{
   calls.push(['provider',JSON.parse(options.body)]);
-  return {ok:true,json:async()=>({status:'completed',output:[{type:'message',content:[refuse?{type:'refusal'}:{type:'output_text',text:JSON.stringify({kind:'transaction',type:'expense',title:'Ongkir',amount:5000,category:'Transportasi'})}]}]})};
+  return {ok:true,json:async()=>({status:'completed',output:[{type:'message',content:[refuse?{type:'refusal'}:{type:'output_text',text:JSON.stringify(intent)}]}]})};
  }});
  return {handler,calls};
 }
@@ -40,6 +40,28 @@ test('API uses scoped memory, no financial dataset, and returns proposal only',a
  assert.ok(calls.some(([key,value])=>key==='user_id'&&value==='user-a'));
  assert.ok(!calls.some(([key,value])=>key==='table'&&value==='transactions'));
  const payload=calls.find(c=>c[0]==='provider')[1];assert.equal(payload.store,false);assert.equal(payload.text.format.strict,true);
+});
+test('API accepts the selected language and retains strict intent validation',async()=>{
+ const {handler,calls}=fixture();
+ const response=await handler({...event,body:JSON.stringify({text:'record expense shipping 5000',today:date,language:'en'})});
+ assert.equal(response.statusCode,200);
+ const payload=calls.find(c=>c[0]==='provider')[1];
+ assert.ok(payload.instructions.includes('Bahasa untuk message dan label query: English'));
+ assert.equal(payload.text.format.strict,true);
+ assert.equal(JSON.parse(response.body).transaction.category,'Transportasi');
+ const invalid=fixture();
+ assert.equal((await invalid.handler({...event,body:JSON.stringify({text:'hello',today:date,language:'untrusted'})})).statusCode,400);
+ assert.ok(!invalid.calls.some(c=>c[0]==='provider'));
+});
+test('AI savings intent returns only a validated proposal without reading or updating goals',async()=>{
+ const {handler,calls}=fixture({intent:{kind:'savings_deposit',title:'Jepang',amount:500000,type:null,category:null}});
+ const response=await handler({...event,body:JSON.stringify({text:'sisihin lima ratus ribu ke rencana Jepang',today:date})});
+ assert.equal(response.statusCode,200);
+ assert.deepEqual(JSON.parse(response.body),{kind:'savings_deposit',deposit:{target:'Jepang',amount:500000}});
+ assert.ok(!calls.some(([key,value])=>key==='table'&&['goals','transactions','assistant_goal_deposits'].includes(value)));
+ assert.ok(calls.find(c=>c[0]==='provider')[1].instructions.includes('savings_deposit'));
+ const invalid=fixture({intent:{kind:'savings_deposit',title:'Jepang',amount:-500000}});
+ assert.equal((await invalid.handler(event)).statusCode,502);
 });
 test('API blocks quota exhaustion and handles refusals without writes',async()=>{
  const limited=fixture({allowed:false});assert.equal((await limited.handler(event)).statusCode,429);assert.ok(!limited.calls.some(c=>c[0]==='provider'));

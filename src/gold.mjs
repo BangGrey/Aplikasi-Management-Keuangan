@@ -1,3 +1,4 @@
+import {getLocale} from './language.mjs';
 export const goldSources=[
  {id:'galeri24',label:'Galeri24 · merek Galeri24',url:'https://galeri24.co.id/harga-emas',automatic:true},
  {id:'antam-galeri24',label:'Antam · buyback di Galeri24',url:'https://galeri24.co.id/harga-emas',automatic:true},
@@ -7,7 +8,7 @@ export const goldSources=[
  {id:'custom',label:'Toko emas lain · input manual',url:null},
 ];
 export const jakartaDay=(date=new Date())=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
-export const gramsText=n=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:4}).format(Number(n))+' g';
+export const gramsText=n=>new Intl.NumberFormat(getLocale(),{maximumFractionDigits:4}).format(Number(n))+' g';
 export function validateHolding(row){
  const units=Number(row.grams)*10000;
  return !!(row.label?.trim()&&row.label.trim().length<=100&&goldSources.some(s=>s.id===row.source)&&Number.isFinite(units)&&units>0&&units<=1e10&&Math.abs(Math.round(units)-units)<0.00001&&['auto','manual'].includes(row.price_mode)&&(row.price_mode!=='manual'||Number.isFinite(Number(row.manual_price))&&Number(row.manual_price)>0&&Number(row.manual_price)<=100000000&&validDay(row.manual_date)));

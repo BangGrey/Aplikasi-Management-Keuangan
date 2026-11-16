@@ -3,9 +3,21 @@ import assert from 'node:assert/strict';
 import {valueHolding,validateHolding,totalGrams,jakartaDay,automaticHolding,valueAtSource,remainingGold} from '../src/gold.mjs';
 import {parseGaleri24,worldQuote,partnerQuotes,TROY_OUNCE_GRAMS} from '../netlify/lib/gold-providers.mjs';
 import {syncGoldPrices} from '../netlify/lib/gold-sync.mjs';
+import {createGoldPricesHandler} from '../netlify/functions/gold-prices.mjs';
 const now=new Date('2026-11-16T04:00:00Z');
 const holding={label:'Emas pribadi',grams:3,source:'galeri24',price_mode:'auto'};
 const quote={source:'galeri24',price_per_gram:2000000,source_date:'2026-11-16',status:'ok'};
+test('empty price snapshots are never cached while populated snapshots use a short cache',async()=>{
+ for(const rows of [[],[quote]]){
+  const builder={then:resolve=>resolve({data:rows,error:null}),order(){return this},limit:async()=>({data:[],error:null})};
+  const handler=createGoldPricesHandler({getAdmin:()=>({from:()=>({select:()=>builder})})});
+  const result=await handler({httpMethod:'GET'});assert.equal(result.statusCode,200);assert.equal(result.headers['Cache-Control'],rows.length?'public,max-age=60':'no-store');
+ }
+});
+test('sync reports permission failure stage without leaking provider messages',async()=>{
+ const db={from:()=>({select:async()=>({data:[],error:null}),upsert:async()=>({error:{code:'42501',message:'sensitive-details'}})})};
+ await assert.rejects(()=>syncGoldPrices(db,{now,partnerUrl:null,request:async()=>{throw Error('offline')}}),error=>error.stage==='write_quotes'&&error.code==='42501'&&!error.message.includes('sensitive-details'));
+});
 test('gold sales subtract exact fractional grams without allowing a negative balance',()=>{
  assert.equal(remainingGold(3,1),2);
  assert.equal(remainingGold(3,3),0);

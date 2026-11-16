@@ -1,8 +1,22 @@
 # Keuanganmu 🌱
 
-Aplikasi manajemen keuangan berbahasa Indonesia: React + Vite, Supabase Auth/Postgres, Midtrans Snap, dan Netlify Functions.
+Aplikasi manajemen keuangan dalam Bahasa Indonesia dan English: React + Vite, Supabase Auth/Postgres, Midtrans Snap, dan Netlify Functions.
 
 Untuk pemasangan pertama, ikuti [panduan konfigurasi bertahap sebelum deploy](SETUP.md).
+
+## Pilihan bahasa
+
+Pilih **ID / EN** di kanan atas atau **Profil → Bahasa tampilan**. Pilihan tersimpan di browser dan langsung berlaku pada navigasi, formulir, tabungan, tema, profil, nota, dan pesan baru dari asisten. Format angka dan tanggal mengikuti bahasa; mata uang tetap rupiah. Nama aplikasi, nama asisten, judul catatan pengguna, nilai kategori database, dan chat sebelumnya tetap tersimpan seperti semula. Tidak memerlukan migrasi Supabase atau environment variable baru.
+
+Asisten premium menerima perintah sederhana dalam kedua bahasa, misalnya `add expense coffee 5000`, `record income salary 5 million`, `What is my current balance?`, dan `Total expenses last month`. Untuk AI lanjutan yang telah dikonfigurasi, pilihan bahasa turut dikirim agar balasan mengikuti bahasa tampilan. Penggunaan bahasa Inggris tidak mengaktifkan konversi valuta asing.
+
+## Mengisi tabungan melalui asisten
+
+Jalankan **`supabase/assistant-savings.sql` setelah `premium.sql`** di Supabase SQL Editor. Migrasi ini menambah catatan setoran dan RPC Premium yang memeriksa kepemilikan, menambah saldo secara atomik, serta memakai ID permintaan tetap agar retry tidak menggandakan setoran. Tidak memerlukan API key atau environment variable baru.
+
+Contoh: target **Liburan ke Jepang** sudah tersedia, lalu pengguna berkata **“tambahkan tabungan ke Jepang 500000”**. Jika hanya satu target cocok, asisten langsung menambah Rp500.000 ke saldo terkumpul dan menampilkan total terbaru. Jika beberapa target cocok, asisten menampilkan pilihan; jika tidak ada yang cocok, pengguna diminta menyebutkan nama lebih lengkap atau membuat target lewat menu Tabungan. Pencocokan memakai kata utuh, tidak menerka target terdekat. Mendukung nominal seperti `500rb`, `500 ribu`, `Rp500.000`, serta `add savings to Japan 500000` untuk target bernama Japan.
+
+Setoran hanya memperbarui progres target tabungan rupiah, sesuai tombol Sisihkan. Tidak otomatis mencatat pemasukan/pengeluaran, mengurangi saldo rupiah, membuat target baru, atau mengubah tabungan emas. Intent tabungan dari OpenAI selalu ditampilkan untuk diperiksa sebelum disimpan. Jika respons gagal setelah penyimpanan, gunakan tombol **Coba lagi** pada pesan yang sama; ID permintaan disimpan bersama chat di browser.
 
 ## Tabungan emas
 
@@ -27,6 +41,16 @@ Database membatasi nama/memori asisten, koreksi kategori, penyimpanan dan pembac
 Jalankan `supabase/username.sql` setelah `schema.sql` (bila file-file lain sudah sukses, cukup jalankan migrasi tambahan ini). Pendaftaran meminta email, username unik, dan password. Login menerima email atau username di kolom yang sama. Akun lama bisa masuk lewat email lalu memilih username melalui avatar kanan atas. Format username: 3–24 karakter, diawali huruf, hanya huruf/angka/underscore, tanpa membedakan huruf besar-kecil.
 
 Tambahkan `SUPABASE_ANON_KEY` ke environment Functions dengan nilai publishable/anon key yang sama dengan frontend, bersama `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY`. Email tetap digunakan Supabase Auth untuk verifikasi dan identitas akun; username adalah alias yang dicocokkan di server. Password diverifikasi Supabase dan tidak disimpan di tabel aplikasi. Login username memerlukan Netlify Functions (Netlify Dev atau deploy pengujian); Vite saja hanya mendukung login email. Detail ada di [SETUP.md](SETUP.md#login-menggunakan-username).
+
+## Profil dan pengaturan akun
+
+Buka **Profil** di menu, avatar kanan atas, atau kartu akun sidebar. Label **Premium** mengikuti langganan berbayar aktif pada `profiles.paid_until`; pengguna tanpa masa aktif, termasuk trial, mendapat label **Pengguna Biasa**. Profil menampilkan email dan batas masa aktif. Badge yang sama terlihat di header/sidebar. Tidak ada tombol untuk menaikkan status premium sendiri di profil.
+
+Form username menggunakan RPC `set_username` dari migrasi `username.sql`, memperbarui nama akun di tampilan, dan menangani username duplikat. Form password meminta password saat ini, password baru minimal 8 karakter, dan konfirmasi. Password saat ini diverifikasi melalui klien Supabase Auth sementara dengan penyimpanan sesi dimatikan; ID akun harus cocok sebelum memperbarui password. Klien verifikasi sementara dikeluarkan dengan scope lokal tanpa sengaja mengeluarkan sesi utama. Password tidak dicatat di tabel profil, log aplikasi, atau localStorage.
+
+Jika Supabase meminta reautentikasi untuk **Secure password change**, form menampilkan pengiriman kode email dan kolom kode (`nonce`). Pengiriman email harus sudah berfungsi. Kebijakan password Supabase yang lebih ketat tetap berlaku. Pengaturan username/password tersedia untuk pengguna biasa maupun premium, termasuk setelah trial berakhir. Ini bukan alur lupa password; pengguna harus masih login dan mengetahui password saat ini.
+
+Tidak perlu migrasi baru untuk halaman profil bila `username.sql` sudah diterapkan. Detail API: [Supabase updateUser](https://supabase.com/docs/reference/javascript/auth-updateuser), [password security](https://supabase.com/docs/guides/auth/password-security). Uji perubahan username, password salah, ketidaksamaan konfirmasi, password benar, email nonce, akun trial, dan akun premium secara langsung sebelum produksi. Build/unit test menggunakan mock Auth; browser dan perubahan akun nyata belum diuji tanpa kredensial layanan.
 
 ## Koleksi tema
 
@@ -73,6 +97,8 @@ Harga awal Rp29.000 untuk 30 hari, pembayaran manual tanpa penagihan otomatis. U
 Build dan unit test dapat dijalankan tanpa akun layanan. Auth, RLS, email, pembayaran Sandbox, dan deployment harus diuji dengan proyek Supabase, akun Midtrans, serta akun Netlify yang sudah dikonfigurasi. Belum mencakup pembatalan/refund otomatis, billing admin, atau reset kata sandi melalui email.
 
 ## Asisten keuangan & nota
+
+Asisten dibuka melalui karakter di kanan atas bagian judul halaman. Bubble “Aku bisa bantu kamu” berada di atas karakter; karakter mengikuti tema aktif, sedangkan tema pastel memakai robot netral. Karakter memiliki animasi gerakan ringan dan melambaikan tangan; mode pengurangan gerakan perangkat menonaktifkan animasi. Klik karakter untuk membuka panel chat di bagian atas, terpisah dari badge hosting kanan bawah. Tombol Escape menutup panel dan mengembalikan fokus ke karakter. Akun nonpremium membuka informasi upgrade, sementara fungsi asisten tetap hanya untuk pelanggan premium. Perubahan ini tidak menghapus badge milik penyedia hosting.
 
 Jalankan `supabase/assistant.sql` di SQL Editor setelah `schema.sql`, untuk proyek baru maupun yang sudah ada. Migrasi ini boleh dijalankan ulang. Nama asisten disimpan per akun dalam tabel `assistant_preferences` dengan RLS; akses asisten memerlukan langganan premium berbayar aktif setelah migrasi premium.sql diterapkan. Tanpa migrasi, chat akun menampilkan pemberitahuan konfigurasi dan tidak menerima perintah. Demo pencatatan manual dapat digunakan tanpa Supabase; asisten khusus langganan premium berbayar.
 

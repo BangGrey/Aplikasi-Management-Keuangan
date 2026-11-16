@@ -1,16 +1,30 @@
-// Deterministic Indonesian command parser. Never executes arbitrary instructions.
-export const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
+import {getLocale,getLanguage,tr} from './language.mjs';
+// Only explicit, single-transaction commands are accepted. Amounts remain IDR.
+export const rupiah=n=>new Intl.NumberFormat(getLocale(),{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
+function commandText(text){
+ const english=/\b(add|record|expense|expenses|income|buy|bought|pay|paid|received|balance|summary|salary|today|yesterday|month|week|year|all time)\b/i.test(text);
+ if(!english)return text;
+ const phrases=[[/\b(?:do not|[a-z]+n['’]t|cannot|never|no|not|without)\b/gi,'jangan'],[/\b(?:if|unless|maybe|might|could|would|should|want|planning|plan|example|suppose|imagine|pretend|either|or|wish|hope)\b/gi,'mungkin'],[/\b(?:how much|what|when|where|how)\b/gi,'berapa'],[/\b(?:this|last) (week|month|year)\b/gi,m=>{const [when,unit]=m.toLowerCase().split(' ');return ({week:'minggu',month:'bulan',year:'tahun'}[unit])+' '+(when==='this'?'ini':'lalu')}],[/\ball time\b/gi,'semua'],[/\band (?:make|create|generate)(?: a)? receipt\b/gi,'dan buatkan nota'],[/\bcurrent(?:ly)?\b/gi,'saat ini']];
+ let normalized=text.replace(/\bIDR\s*(?=\d)/gi,'Rp ');for(const [pattern,value]of phrases)normalized=normalized.replace(pattern,value);
+ const words={add:'tambahkan',record:'catat',expense:'pengeluaran',expenses:'pengeluaran',income:'pemasukan',balance:'saldo',summary:'ringkasan',buy:'beli',bought:'beli',pay:'bayar',paid:'bayar',receive:'terima',received:'terima',today:'hari ini',yesterday:'kemarin',tomorrow:'besok',day:'hari',days:'hari',week:'minggu',weeks:'minggu',month:'bulan',months:'bulan',year:'tahun',years:'tahun',last:'terakhir',thousand:'ribu',million:'juta',and:'dan',from:'dari',for:'untuk',please:'tolong',delete:'hapus',remove:'hapus',cancel:'batal'};
+ normalized=normalized.replace(/\b[a-z]+\b/gi,word=>words[word.toLowerCase()]||word);
+ // English thousands separators; decimals stay subject to the existing whole-IDR validation.
+ return normalized.replace(/\b\d{1,3}(?:,\d{3})+\b/g,value=>value.replaceAll(',',''));
+}
 export function localDate(now=new Date()){
  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 }
 export function parseName(text,first=false){
+ const english=text.trim().match(/^(?:(?:i(?:'ll|’ll| will)?\s+)?call you|your name is|rename yourself(?: to)?)\s+(.+?)[.!]?$/iu);
  const match=text.trim().match(/^(?:(?:aku|saya)\s+(?:akan\s+)?(?:memanggil|menamai|panggil)\s+(?:kamu|mu)\s+(?:sebagai\s+)?|(?:nama(?:mu| kamu)|ganti nama(?:mu| kamu)?)\s*(?:adalah|jadi|menjadi|ke|:)\s*|panggil(?:\s+kamu)?\s+)(.+?)[.!]?$/iu);
- const value=(match?.[1]||(first?text.trim():'' )).trim();
+ const value=(english?.[1]||match?.[1]||(first?text.trim():'' )).trim();
  if(!value||value.length>30||!/^\p{L}[\p{L}\p{M} '\-]*$/u.test(value))return null;
  return value;
 }
 export function parseExpense(text,now=new Date()){
  const fail=message=>({error:message});
+ if(/[$€£]|\b(?:USD|EUR|GBP|dollars?|euros?|pounds?)\b/i.test(text))return fail('Nominal harus dalam rupiah (IDR).');
+ text=commandText(text);
  if(text.length>500)return fail('Pesannya terlalu panjang. Tulis satu pengeluaran saja.');
  if(!/\b(pengeluaran|beli|membeli|bayar|membayar|catat|keluar)\b/i.test(text)||/\b(pemasukan|gaji|jangan|tidak|bukan|belum|batal|hapus|contoh|misal|misalkan|berapa|apakah|mungkin|rencana|ingin|mau|atau)\b|\?/i.test(text))return fail('Saya bisa mencatat satu pengeluaran. Coba: “tambahkan pengeluaran untuk membeli kopi 5000”.');
  // Require a single positive whole-rupiah amount; reject multiple transactions and uncertain numbers.
@@ -31,12 +45,13 @@ export function parseExpense(text,now=new Date()){
  .replace(/[.,!]+$/g,'').replace(/\s+/g,' ').trim();
  if(!title||title.length>100||/\b(dan|serta|lalu)\b/i.test(title))return fail('Sebutkan satu nama pengeluaran, misalnya “kopi”, beserta nominalnya.');
  title=title.charAt(0).toUpperCase()+title.slice(1);
- const rules=[[/kopi|makan|minum|roti|nasi|teh|snack/i,'Makanan'],[/bensin|parkir|ojek|taksi|bus|kereta|transport/i,'Transportasi'],[/listrik|internet|pulsa|air|tagihan/i,'Tagihan'],[/obat|dokter|vitamin/i,'Kesehatan'],[/bioskop|game|film/i,'Hiburan'],[/belanja|baju|sepatu/i,'Belanja']];
+ const rules=[[/kopi|makan|minum|roti|nasi|teh|snack|coffee|food|lunch|dinner|breakfast|bread|tea/i,'Makanan'],[/bensin|parkir|ojek|taksi|bus|kereta|transport|taxi|fuel|parking/i,'Transportasi'],[/listrik|internet|pulsa|air|tagihan|electricity|water bill/i,'Tagihan'],[/obat|dokter|vitamin|medicine|doctor/i,'Kesehatan'],[/bioskop|game|film|cinema/i,'Hiburan'],[/belanja|baju|sepatu|shopping|clothes|shoes/i,'Belanja']];
  return {transaction:{title,type:'expense',amount,category:rules.find(([r])=>r.test(title))?.[1]||'Lainnya',date:localDate(now)}};
 }
 
 export function parseTransaction(text,now=new Date()){
- const income=/\b(pemasukan|pendapatan|gaji|terima|menerima)\b/i.test(text);
+ text=commandText(text);
+ const income=/\b(pemasukan|pendapatan|gaji|salary|terima|menerima)\b/i.test(text);
  if(!income)return parseExpense(text,now);
  if(/\b(pengeluaran|beli|membeli|bayar|membayar|keluar)\b/i.test(text))return {error:'Pisahkan pemasukan dan pengeluaran menjadi dua pesan.'};
  if(!/\b(tambah(?:kan)?|catat(?:kan)?|terima|menerima)\b/i.test(text))return {error:'Untuk mencatat pemasukan, coba “catat pemasukan gaji 5 juta”.'};
@@ -45,13 +60,15 @@ export function parseTransaction(text,now=new Date()){
  const result=parseExpense('catat '+normalized.replace(/\bgaji\b/gi,'upah'),now);
  if(result.error)return {error:result.error.replace(/pengeluaran/g,'pemasukan').replace('beli kopi Rp5.000','catat pemasukan gaji Rp5.000')};
  const title=result.transaction.title.replace(/\bupah\b/gi,'Gaji').replace(/\s+dari\s+/gi,' dari ').replace(/^dari\s+/i,'');
- return {transaction:{...result.transaction,title,type:'income',category:/gaji|upah/i.test(text)?'Gaji':/freelance|proyek/i.test(text)?'Freelance':'Lainnya',date:localDate(now)}};
+ return {transaction:{...result.transaction,title,type:'income',category:/gaji|upah|salary/i.test(text)?'Gaji':/freelance|proyek/i.test(text)?'Freelance':'Lainnya',date:localDate(now)}};
 }
 
 const months=['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'];
-const dateLabel=value=>new Date(value+'T00:00:00').toLocaleDateString('id-ID',{dateStyle:'long'});
+const dateLabel=value=>new Date(value+'T00:00:00').toLocaleDateString(getLocale(),{dateStyle:'long'});
 function validDate(value){const d=new Date(value+'T00:00:00');return !Number.isNaN(d.getTime())&&localDate(d)===value}
 export function parsePeriod(text,now=new Date(),allByDefault=false){
+ text=commandText(text).replace(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/gi,m=>months[['january','february','march','april','may','june','july','august','september','october','november','december'].indexOf(m.toLowerCase())]);
+ if(/\d{4}-\d{2}-\d{2}/.test(text))text=text.replace(/\b(?:to|through)\b/gi,'sampai').replace(/\bbetween\b/gi,'').replace(/\bdan\b/gi,'sampai');
  const t=text.toLowerCase(),year=now.getFullYear(),month=now.getMonth();
  const day=offset=>localDate(new Date(year,month,now.getDate()+offset));
  const range=(from,to,label)=>({from,to,label});
@@ -67,7 +84,7 @@ export function parsePeriod(text,now=new Date(),allByDefault=false){
  return allByDefault?range(null,day(0),'seluruh catatan sampai hari ini'):range(localDate(new Date(year,month,1)),localDate(new Date(year,month+1,0)),'bulan ini');
 }
 export function parseFinancialQuery(text,now=new Date()){
- const t=text.toLowerCase();
+ const t=commandText(text).toLowerCase();
  if(!/\b(saldo|pemasukan|pendapatan|pengeluaran|ringkasan)\b/.test(t))return null;
  if(/\b(tambah(?:kan)?|catat(?:kan)?|beli|bayar|terima|menerima)\b/.test(t)){
   if(/\b(berapa|total|saldo|ringkasan)\b|\?/.test(t))return {error:'Pisahkan perintah mencatat dan pertanyaan ringkasan menjadi dua pesan.'};
@@ -81,6 +98,13 @@ export function summarizeTransactions(rows,query){
  const selected=rows.filter(t=>(!query.from||t.date>=query.from)&&t.date<=query.to);
  const income=selected.filter(t=>t.type==='income').reduce((n,t)=>n+Number(t.amount),0);
  const expense=selected.filter(t=>t.type==='expense').reduce((n,t)=>n+Number(t.amount),0);
+ if(getLanguage()==='en'){
+  const label=tr(query.label).replace(/^seluruh catatan sampai (\d{4}-\d{2}-\d{2})$/,(_,date)=>`all records through ${date}`).replace(/^(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember) (\d{4})$/i,(_,month,year)=>new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric'}).format(new Date(Number(year),months.indexOf(month.toLowerCase()),1)));
+  const period=`Period: ${label}${query.from?` (${query.from} to ${query.to})`:''}.`;
+  if(query.kind==='income')return `${period}\nTotal income: ${rupiah(income)}.\n${selected.filter(t=>t.type==='income').length} income records.`;
+  if(query.kind==='expense')return `${period}\nTotal expenses: ${rupiah(expense)}.\n${selected.filter(t=>t.type==='expense').length} expense records.`;
+  return `${period}\nIncome: ${rupiah(income)}\nExpenses: ${rupiah(expense)}\n${query.from?'Period balance':'Current recorded balance'}: ${rupiah(income-expense)}\nCalculated from transaction records; savings goal progress is excluded.${selected.length?'':' No transactions in this period.'}`;
+ }
  const period=`Periode: ${query.label}${query.from?` (${query.from} s.d. ${query.to})`:''}.`;
  if(query.kind==='income')return `${period}\nTotal pemasukan: ${rupiah(income)}.\n${selected.filter(t=>t.type==='income').length} catatan pemasukan.`;
  if(query.kind==='expense')return `${period}\nTotal pengeluaran: ${rupiah(expense)}.\n${selected.filter(t=>t.type==='expense').length} catatan pengeluaran.`;

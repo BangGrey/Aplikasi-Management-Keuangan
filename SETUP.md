@@ -2,6 +2,8 @@
 
 Ikuti tahap sesuai urutan. Panduan ini tidak menjalankan deploy atau mengubah akun layanan secara otomatis. Nama menu dashboard bisa sedikit berbeda.
 
+Pilihan bahasa tersedia di **ID / EN** pada kanan atas dan **Profil → Bahasa tampilan**. Bahasa tersimpan di browser; fitur ini tidak memerlukan konfigurasi layanan atau SQL tambahan.
+
 ## 1. Buat proyek Supabase
 
 1. Masuk ke https://supabase.com/dashboard dan pilih New project.
@@ -20,10 +22,11 @@ Ikuti tahap sesuai urutan. Panduan ini tidak menjalankan deploy atau mengubah ak
 | 6 | `supabase/premium.sql` | Kunci asisten dan tema karakter untuk langganan berbayar |
 | 7 | `supabase/gold.sql` | Tabungan gram, cache harga, dan riwayat emas |
 | 8 | `supabase/gold-reductions.sql` | Pengurangan gram terjual dan catatan pengurangan |
+| 9 | `supabase/assistant-savings.sql` | Setoran ke target tabungan melalui asisten Premium, aman untuk retry |
 
-`schema.sql` untuk proyek baru dan **tidak boleh diulang sembarangan**. Jika muncul `already exists`, hentikan, simpan pesan error, dan periksa bagian yang sudah dibuat. File 2–7 dirancang bisa dijalankan ulang. Jangan menghapus tabel untuk mencoba memperbaiki error. Jika migrasi sebelumnya sudah sukses, cukup jalankan file baru yang belum diterapkan. **Jalankan premium.sql setelah assistant.sql/learning.sql**; jika mengulang keduanya, terapkan premium.sql lagi agar aturan lama tidak membuka akses trial. gold.sql boleh dijalankan setelah premium.sql.
+`schema.sql` untuk proyek baru dan **tidak boleh diulang sembarangan**. Jika muncul `already exists`, hentikan, simpan pesan error, dan periksa bagian yang sudah dibuat. File 2–9 dirancang bisa dijalankan ulang. Jangan menghapus tabel untuk mencoba memperbaiki error. Jika migrasi sebelumnya sudah sukses, cukup jalankan file baru yang belum diterapkan. **Jalankan premium.sql setelah assistant.sql/learning.sql**; jika mengulang keduanya, terapkan premium.sql lagi agar aturan lama tidak membuka akses trial. gold.sql dan assistant-savings.sql boleh dijalankan setelah premium.sql.
 
-6. Buka Table Editor, pastikan ada 14 tabel di schema public: `profiles`, `transactions`, `goals`, `orders`, `assistant_preferences`, `assistant_memories`, `assistant_suggestions`, `assistant_knowledge`, `assistant_usage`, `login_attempts`, `gold_holdings`, `gold_quotes`, `gold_quote_history`, `gold_reductions`. Tabel `profiles` juga memiliki kolom `username`. Jalankan gold-reductions.sql setelah gold.sql; untuk proyek yang sudah terpasang, cukup jalankan migrasi baru yang belum diterapkan.
+6. Buka Table Editor, pastikan ada 15 tabel di schema public: `profiles`, `transactions`, `goals`, `orders`, `assistant_preferences`, `assistant_memories`, `assistant_suggestions`, `assistant_knowledge`, `assistant_usage`, `login_attempts`, `gold_holdings`, `gold_quotes`, `gold_quote_history`, `gold_reductions`, `assistant_goal_deposits`. Tabel `profiles` juga memiliki kolom `username`. Jalankan gold-reductions.sql setelah gold.sql; assistant-savings.sql memerlukan premium.sql. Untuk proyek yang sudah terpasang, cukup jalankan migrasi baru yang belum diterapkan.
 7. Di SQL Editor, jalankan pemeriksaan baca ini. Semua tabel tersebut harus menunjukkan `rls_enabled = true`:
 
 ```sql
@@ -174,7 +177,9 @@ Pendaftaran memakai email, username, dan password; email tetap diperlukan untuk 
 
 Saat masuk, pilih “Masuk ke akun saya”, lalu isi kolom Email atau username. Login email tetap langsung melalui Supabase Auth. Login username melalui `/.netlify/functions/login-username`: server mencari ID akun, mengambil email di server, memverifikasi password lewat klien Auth publik terpisah, lalu mengirim token sesi ke browser. Tidak tersedia endpoint publik untuk mengambil email dari username. Password tidak disimpan di tabel aplikasi.
 
-Akun yang sudah ada: masuk dengan email, klik avatar kanan atas, pilih/simpan username. Penggantian username tidak mengubah email, password, atau tanggal trial. Username lama tidak lagi bisa digunakan untuk akun itu dan dapat dipilih akun lain.
+Akun yang sudah ada: masuk dengan email, klik avatar kanan atas atau menu Profil, lalu simpan username baru. Penggantian username tidak mengubah email, password, atau tanggal trial. Username lama tidak lagi bisa digunakan untuk akun itu dan dapat dipilih akun lain.
+
+Di halaman Profil, label Premium hanya muncul saat paid_until masih aktif; akun trial/tanpa langganan aktif berlabel Pengguna Biasa. Password bisa diubah dengan password lama, password baru, dan konfirmasi. Jika Secure password change memerlukan kode email, gunakan Kirim kode ke email dan masukkan kode yang diterima. Profil juga menyediakan tombol Keluar. Fitur ini tidak memerlukan SQL tambahan setelah username.sql, dan tetap dapat dipakai saat trial/langganan berakhir.
 
 Uji login username memakai Netlify Dev atau deployment pengujian dengan `SUPABASE_URL`, `SUPABASE_ANON_KEY`, dan `SUPABASE_SERVICE_ROLE_KEY` tersedia di Functions. `npm run dev` hanya melayani frontend, sehingga login email bisa diuji di sana tetapi login username tidak. Tidak perlu memasukkan secret key ke variabel Vite. Login username dibatasi 20 percobaan per jendela 15 menit untuk IP dan username; informasi bucket disimpan sebagai HMAC, tanpa password. SQL Editor dapat membersihkan data `login_attempts` lama dengan query pemeliharaan yang ada di `username.sql`.
 
