@@ -8,7 +8,9 @@ Identitas aplikasi adalah **Tabunganmu**. Footer halaman pengenalan dan aplikasi
 
 ## Halaman pengenalan dan paket Premium
 
-Pengunjung tanpa sesi membuka halaman pengenalan terlebih dahulu: fitur, pratinjau aplikasi, alasan membuat akun, perbedaan trial/Premium, harga, dan tanya jawab. Tombol **Masuk** membuka formulir login; **Daftar gratis** membuka registrasi. **Jelajahi demo** membuka dashboard dengan data contoh melalui `#demo`. Pengguna yang sudah masuk langsung membuka aplikasinya. Pilihan Bahasa Indonesia/English juga tersedia pada halaman pengenalan.
+Pengunjung tanpa sesi membuka halaman pengenalan terlebih dahulu: fitur, pratinjau aplikasi, alasan membuat akun, perbedaan trial/Premium, harga, dan tanya jawab. Tombol **Masuk** membuka formulir login; **Daftar gratis** membuka registrasi. **Jelajahi demo** membuka dashboard dengan data contoh melalui `/demo`. Pengguna yang sudah masuk langsung membuka aplikasinya. Pilihan Bahasa Indonesia/English juga tersedia pada halaman pengenalan.
+
+Navigasi menggunakan URL tanpa tanda `#`: `/beranda`, `/fitur`, `/cara-mulai`, `/paket`, dan `/pertanyaan` untuk pengenalan; `/ringkasan`, `/pemasukan`, `/pengeluaran`, `/tabungan`, `/tema`, `/langganan`, dan `/profil` untuk akun. Halaman demo memakai awalan `/demo`, misalnya `/demo/tabungan`. Halaman akun memerlukan login; setelah masuk, pengguna melanjutkan ke halaman yang diminta. URL bisa dibuka langsung, dimuat ulang, dan ditelusuri dengan tombol kembali/maju browser. Tautan lama seperti `/#beranda` atau `/#demo` otomatis diganti ke alamat baru. Redirect SPA `/* → /index.html` di `netlify.toml` sudah mendukung URL ini; tidak perlu mengubah konfigurasi Supabase atau database.
 
 Ilustrasi utama berupa **slideshow enam gambar fitur**: ringkasan, transaksi, target tabungan, emas, asisten, dan tema. Gambar otomatis berganti setiap 6 detik serta dapat dipilih melalui tab, tombol sebelumnya/berikutnya, atau usapan horizontal di ponsel. Tombol jeda/putar mengontrol rotasi; rotasi juga berhenti sementara saat hover/fokus, tab browser tersembunyi, atau slideshow di luar layar. Preferensi reduced motion memulai slideshow dalam keadaan dijeda.
 
@@ -137,6 +139,8 @@ Pilihan harga mengikuti katalog pada bagian paket Premium. Jika mengubahnya, sel
 Build dan unit test dapat dijalankan tanpa akun layanan. Auth, RLS, email, pembayaran Sandbox, dan deployment harus diuji dengan proyek Supabase, akun Midtrans, serta akun Netlify yang sudah dikonfigurasi. Belum mencakup pembatalan/refund otomatis, billing admin, atau reset kata sandi melalui email.
 
 ## Asisten keuangan & nota
+
+Percakapan dasar dijawab otomatis di browser tanpa panggilan atau kuota API AI: “halo”, “hai Muchi”, “selamat pagi”, “apa kabar?”, “terima kasih”, “siapa namamu?”, “apa yang bisa kamu bantu?”, “oke”, dan “sampai jumpa”, beserta padanan English. Jawaban mengikuti bahasa tampilan, username, dan nama asisten terbaru. Sebelum diberi nama, asisten menjawab sapaan lalu mengingatkan pengguna untuk memilih nama; sapaan tidak disimpan sebagai nama asisten. Percakapan dasar tidak membuat transaksi, nota, atau mengubah draf tabungan. Fitur ini mengikuti akses asisten Premium/trial dan tidak memerlukan konfigurasi atau migrasi SQL tambahan.
 
 Asisten dibuka melalui karakter di kanan atas bagian judul halaman. Bubble “Aku bisa bantu kamu” berada di atas karakter; karakter mengikuti tema aktif, sedangkan tema pastel memakai robot netral. Karakter memiliki animasi gerakan ringan dan melambaikan tangan; mode pengurangan gerakan perangkat menonaktifkan animasi. Klik karakter untuk membuka panel chat di bagian atas, terpisah dari badge hosting kanan bawah. Tombol Escape menutup panel dan mengembalikan fokus ke karakter. Akun nonpremium membuka informasi upgrade, sementara fungsi asisten tetap hanya untuk pelanggan premium. Perubahan ini tidak menghapus badge milik penyedia hosting.
 

@@ -14,7 +14,7 @@ test('language switches throughout the app, persists after reload, and preserves
  let app;
  const text=()=>document.body.textContent;
  const click=async(element)=>{assert.ok(element,'Expected a clickable element');await act(async()=>element.click())};
- const nav=label=>[...document.querySelectorAll('nav button')].find(b=>b.textContent.startsWith(label));
+ const nav=label=>[...document.querySelectorAll('.sidebar nav a')].find(b=>b.textContent.startsWith(label));
  const choose=async(value)=>{await act(async()=>{const select=document.querySelector('.header-right .language-switch select');select.value=value;select.dispatchEvent(new dom.window.Event('change',{bubbles:true}))})};
  try{
   await server.pluginContainer.buildStart({});
@@ -47,7 +47,8 @@ test('language switches throughout the app, persists after reload, and preserves
   // The saved preference is used before the first render after a reload.
   server.moduleGraph.invalidateAll();
   await act(async()=>{app=await server.ssrLoadModule('/src/main.jsx')});
-  assert.equal(document.documentElement.lang,'en');assert.ok(text().includes('Peaceful finances, happy heart.'));assert.ok(document.title.includes('Your money'));
+  assert.equal(document.documentElement.lang,'en');assert.ok(text().includes('Your account, your own space.'));assert.ok(document.title.includes('Your money'));
+  assert.equal(window.location.pathname,'/demo/profil');
  }finally{
   if(app)await act(async()=>app.appRoot.unmount());
   await server.close();dom.window.close();

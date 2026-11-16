@@ -1,0 +1,17 @@
+{
+  "teman": "friend",
+  "Halo, {username}! Apa yang bisa {assistant} bantu untuk kamu?": "Hello, {username}! What can {assistant} help you with?",
+  "Selamat pagi, {username}! {assistant} siap menemanimu mengatur keuangan hari ini. Ada yang bisa dibantu?": "Good morning, {username}! {assistant} is ready to help you manage your finances today. How can I help?",
+  "Selamat siang, {username}! Ada yang ingin kamu catat atau tanyakan kepada {assistant}?": "Good afternoon, {username}! Is there anything you would like to record or ask {assistant}?",
+  "Selamat sore, {username}! {assistant} siap membantu. Mau mencatat transaksi atau melihat ringkasan keuanganmu?": "Good evening, {username}! {assistant} is ready to help. Would you like to record a transaction or review your finances?",
+  "Selamat malam, {username}! Ada yang bisa {assistant} bantu sebelum kamu beristirahat?": "Good night, {username}! Can {assistant} help with anything before you rest?",
+  "Waalaikumsalam, {username}! Ada yang bisa {assistant} bantu hari ini?": "Wa alaikum assalam, {username}! What can {assistant} help you with today?",
+  "Kabar {assistant} baik, {username}! Siap membantu mencatat keuanganmu. Kamu ingin mulai dari mana?": "{assistant} is doing well, {username}! Ready to help with your financial records. Where would you like to start?",
+  "Sama-sama, {username}! Senang bisa membantu. Kalau perlu bantuan lagi, panggil {assistant}, ya.": "You are welcome, {username}! Happy to help. Just ask {assistant} whenever you need a hand.",
+  "{assistant} adalah asisten keuanganmu, {username}. Aku bisa membantu mencatat transaksi, membuat atau mengisi tabungan, dan melihat ringkasan keuangan.": "{assistant} is your financial assistant, {username}. I can help record transactions, create or fund savings goals, and review financial summaries.",
+  "{username}, kamu bisa meminta {assistant} untuk:\n• Mencatat pengeluaran: “beli kopi 5000”.\n• Mencatat pemasukan: “catat pemasukan gaji 5 juta”.\n• Membuat tabungan: “buat tabungan rumah target 500 juta”.\n• Mengisi tabungan: “tambahkan tabungan ke Jepang 500000”.\n• Melihat keuangan: “berapa saldo saat ini?” atau “total pengeluaran bulan ini”.\nSebutkan satu permintaan dalam setiap pesan, ya.": "{username}, you can ask {assistant} to:\n• Record an expense: “buy coffee 5000”.\n• Record income: “record income salary 5 million”.\n• Create a savings goal: “create savings for a house target 500 million”.\n• Fund a savings goal: “add savings to Japan 500000”.\n• Review finances: “what is my current balance?” or “total expenses this month”.\nPlease send one request per message. Amounts are in IDR.",
+  "Sampai jumpa, {username}! {assistant} siap membantu saat kamu kembali. Semoga harimu menyenangkan.": "See you, {username}! {assistant} will be ready to help when you return. Have a lovely day.",
+  "Siap, {username}! Kalau ada yang ingin dicatat atau ditanyakan, {assistant} siap membantu.": "Got it, {username}! {assistant} is ready whenever you want to record something or ask a question.",
+  "Kamu ingin menamai saya sebagai apa? Contohnya, “aku akan memanggil kamu Muchi”.": "What would you like to name me? For example, “I will call you Muchi”.",
+  "Kamu ingin mengganti nama saya menjadi apa?": "What would you like my new name to be?"
+}

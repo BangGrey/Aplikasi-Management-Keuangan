@@ -17,6 +17,19 @@ test('visitors can explore previews, switch language, choose a plan, sign in, re
   await server.pluginContainer.buildStart({});
   await act(async()=>{app=await server.ssrLoadModule('/src/main.jsx')});
   assert.ok(document.querySelector('.landing-page'));assert.ok(!document.querySelector('.sidebar'));
+  assert.equal(window.location.pathname,'/beranda');assert.equal(window.location.hash,'');
+  const scrolled=[];dom.window.HTMLElement.prototype.scrollIntoView=function(){scrolled.push(this.id);document.documentElement.scrollTop=this.id==='beranda'?0:500};
+  await click(document.querySelector('.landing-nav a[href="/fitur"]'));
+  assert.equal(window.location.pathname,'/fitur');assert.equal(window.location.hash,'');assert.equal(scrolled.at(-1),'fitur');assert.equal(document.documentElement.scrollTop,500);
+  await click(document.querySelector('.landing-nav a[href="/paket"]'));
+  assert.equal(window.location.pathname,'/paket');assert.equal(scrolled.at(-1),'paket');assert.equal(document.documentElement.scrollTop,500);
+  const back=()=>new Promise(resolve=>{window.addEventListener('popstate',resolve,{once:true});window.history.back()});
+  const forward=()=>new Promise(resolve=>{window.addEventListener('popstate',resolve,{once:true});window.history.forward()});
+  await act(async()=>{await back()});assert.equal(window.location.pathname,'/fitur');assert.equal(scrolled.at(-1),'fitur');
+  await act(async()=>{await forward()});assert.equal(window.location.pathname,'/paket');assert.equal(scrolled.at(-1),'paket');
+  await click(document.querySelector('.landing-brand'));
+  assert.equal(window.location.pathname,'/beranda');assert.equal(scrolled.at(-1),'beranda');
+  await click(document.querySelector('.landing-skip'));assert.equal(document.activeElement.id,'kenalan');assert.equal(window.location.hash,'');
   assert.ok(document.title.startsWith('Tabunganmu'));
   const support=document.querySelector('.landing-footer .service-email');assert.equal(support.getAttribute('href'),'mailto:tabunganmusupport@gmail.com');
   assert.ok(document.querySelector('.service-copyright').textContent.includes('© '+new Date().getFullYear()+' Tabunganmu.'));
@@ -35,9 +48,15 @@ test('visitors can explore previews, switch language, choose a plan, sign in, re
   await click(document.querySelector('.landing-pricing-card>.landing-button'));
   assert.equal(localStorage.getItem('keuanganmu-selected-plan'),'half-yearly');assert.equal(document.querySelector('.modal select').value,'register');assert.ok(document.querySelector('.modal [name=email]'));
   await click(document.querySelector('.modal .close'));
-  await click(document.querySelector('.landing-demo'));assert.ok(document.querySelector('.sidebar'));assert.equal(window.location.hash,'#demo');
+  await click(document.querySelector('.landing-demo'));assert.ok(document.querySelector('.sidebar'));assert.equal(window.location.pathname,'/demo');assert.equal(window.location.hash,'');
+  await click(document.querySelector('.sidebar nav a[href="/demo/tabungan"]'));assert.equal(window.location.pathname,'/demo/tabungan');assert.ok(document.querySelector('.savings-tabs'));
+  await act(async()=>{await back()});assert.equal(window.location.pathname,'/demo');assert.ok(document.querySelector('.stats'));
+  await act(async()=>{await forward()});assert.equal(window.location.pathname,'/demo/tabungan');assert.ok(document.querySelector('.savings-tabs'));
+  await act(async()=>app.appRoot.unmount());app=null;server.moduleGraph.invalidateAll();
+  await act(async()=>{app=await server.ssrLoadModule('/src/main.jsx')});
+  assert.equal(window.location.pathname,'/demo/tabungan');assert.ok(document.querySelector('.savings-tabs'),'refresh keeps the current demo page');
   assert.equal(document.querySelector('.app-footer .service-email').getAttribute('href'),'mailto:tabunganmusupport@gmail.com');assert.ok(document.querySelector('.brand').textContent.includes('tabunganmu'));
-  await act(async()=>{window.location.hash='beranda';window.dispatchEvent(new dom.window.HashChangeEvent('hashchange'))});assert.ok(document.querySelector('.landing-page'));
+  await act(async()=>{window.history.pushState(null,'','/beranda');window.dispatchEvent(new dom.window.PopStateEvent('popstate'))});assert.ok(document.querySelector('.landing-page'));
   // Premium users see renewal actions without signup or first-subscription buttons.
   await act(async()=>app.appRoot.unmount());app=null;
   const {createRoot}=await import('react-dom/client');root=createRoot(document.getElementById('root'));

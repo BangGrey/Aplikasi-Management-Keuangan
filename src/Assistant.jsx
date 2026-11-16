@@ -11,6 +11,7 @@ import { parseSavingsDeposit, matchSavingsGoals } from './savings-assistant.mjs'
 import { parseGoalCreation,validateGoalDraft } from './savings-goals.mjs';
 import GoalCreationCard from './GoalCreationCard.jsx';
 import ChatBubble,{AssistantAvatar} from './ChatBubble.jsx';
+import {basicChatReply} from './basic-chat.mjs';
 import './savings-assistant.css';
 const introduction = 'Halo! Saya asisten keuangan kamu. Kamu ingin menamai saya sebagai apa?';
 function stored(key, fallback) {try {return JSON.parse(localStorage.getItem(key)) ?? fallback;} catch {return fallback;}}
@@ -108,6 +109,8 @@ function Assistant({ db, session, active, onRecord, onRead, onCorrect, onReceipt
   async function send(e) {e.preventDefault();const text = input.trim();if (!text || lock.current || loading || loadError) return;lock.current = true;setBusy(true);setInput('');setMessages((m) => [...m, { role: 'user', text }]);
     try {
       if (!active) {say(tr("Trial kamu sudah berakhir. Berlangganan untuk menamai asisten dan mencatat transaksi baru."));return;}
+      const basicReply=basicChatReply(text,{userName,assistantName:name,renaming});
+      if(basicReply){say(basicReply);return;}
       const candidate = parseName(text, !name || renaming);
       if (!name || renaming || candidate) {if (!candidate) {say(tr("Pilih nama 1–30 karakter berupa huruf, misalnya “Muchi”."));return;}if (session) {const { error } = await db.from('assistant_preferences').upsert({ user_id: session.user.id, name: candidate });if (error) throw error;} else localStorage.setItem(key + '-name', JSON.stringify(candidate));setName(candidate);setRenaming(false);say(tr("Baiklah, mulai sekarang saya akan bernama {p0}. Ada yang bisa dibantu? Coba “tambahkan pengeluaran untuk membeli kopi 5000”.", { p0: candidate }));return;}
       const creation=parseGoalCreation(text,goalDraft);
