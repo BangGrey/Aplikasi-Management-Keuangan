@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readRoute,pagePath,isPlainNavigation} from '../src/routes.mjs';
+import {readRoute,pagePath,isPlainNavigation,profileBackground} from '../src/routes.mjs';
 
 const route = path => readRoute(new URL(path,'https://tabunganmu.example'));
 
@@ -45,4 +45,14 @@ test('links keep normal new-tab and modified-click browser behavior',()=>{
     assert.equal(isPlainNavigation({...click,[modifier]:true}),false);
   }
   assert.equal(isPlainNavigation({button:1}),false);
+});
+
+test('profile dialogs preserve a valid background page and safely handle direct links',()=>{
+  const profile=route('/profil');
+  assert.equal(profileBackground(profile).path,'/ringkasan');
+  assert.equal(profileBackground({...profile,state:{profileBackgroundPath:'/pengeluaran'}}).path,'/pengeluaran');
+  for(const invalid of ['/profil','/demo/tabungan','https://example.com','/fitur']){
+    assert.equal(profileBackground({...profile,state:{profileBackgroundPath:invalid}}).path,'/ringkasan');
+  }
+  assert.equal(profileBackground({...route('/demo/profil'),state:{profileBackgroundPath:'/demo/tabungan'}}).path,'/demo/tabungan');
 });

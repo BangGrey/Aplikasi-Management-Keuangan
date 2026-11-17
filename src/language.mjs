@@ -3,7 +3,8 @@ import marketingEnglish from './translations/marketing-en.json' with {type:'json
 import experienceEnglish from './translations/experience-en.json' with {type:'json'};
 import basicChatEnglish from './translations/basic-chat-en.json' with {type:'json'};
 import authEnglish from './translations/auth-en.json' with {type:'json'};
-const english={...baseEnglish,...marketingEnglish,...experienceEnglish,...basicChatEnglish,...authEnglish};
+import navigationEnglish from './translations/navigation-en.json' with {type:'json'};
+const english={...baseEnglish,...marketingEnglish,...experienceEnglish,...basicChatEnglish,...authEnglish,...navigationEnglish};
 let language='id';
 export const getLanguage=()=>language;
 export const getLocale=()=>language==='en'?'en-US':'id-ID';

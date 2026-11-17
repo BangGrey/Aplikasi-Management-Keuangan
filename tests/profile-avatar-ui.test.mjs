@@ -20,15 +20,17 @@ test('trial profile previews, saves and removes a photo; every character has a r
  const click=async element=>{assert.ok(element);await act(async()=>element.click())};
  try{
   await server.pluginContainer.buildStart({});
-  const {default:Profile}=await server.ssrLoadModule('/src/Profile.jsx'),{LanguageProvider}=await server.ssrLoadModule('/src/Language.jsx'),{useAvatar}=await server.ssrLoadModule('/src/Avatar.jsx');
+  const {default:Profile}=await server.ssrLoadModule('/src/Profile.jsx'),{default:ProfileDialog}=await server.ssrLoadModule('/src/ProfileDialog.jsx'),{LanguageProvider}=await server.ssrLoadModule('/src/Language.jsx'),{useAvatar}=await server.ssrLoadModule('/src/Avatar.jsx');
   const {themes}=await server.ssrLoadModule('/src/themes.mjs'),{default:ThemeCharacter}=await server.ssrLoadModule('/src/ThemeCharacter.jsx');
   for(const theme of themes.filter(t=>t.character)){const svg=renderToStaticMarkup(React.createElement(ThemeCharacter,{kind:theme.character}));assert.ok(svg.includes('data-character="'+theme.character+'"'));assert.ok(/<(path|rect|circle|ellipse)/.test(svg),theme.id)}
   const {createRoot}=await import('react-dom/client');root=createRoot(document.getElementById('root'));
-  function Harness(){const url=useAvatar(db,user,profile.avatar_path);return React.createElement(Profile,{db,session:{user:{id:user,email:'user@example.test'}},profile,premium:true,avatarUrl:url,onAvatarChanged:path=>{profile.avatar_path=path;render()},onSubscribe(){}})}
+  function Harness(){const url=useAvatar(db,user,profile.avatar_path);return React.createElement(ProfileDialog,{onClose(){}},React.createElement(Profile,{compact:true,db,session:{user:{id:user,email:'user@example.test'}},profile,premium:true,avatarUrl:url,onAvatarChanged:path=>{profile.avatar_path=path;render()},onSubscribe(){}}))}
   function render(){root.render(React.createElement(LanguageProvider,null,React.createElement(Harness)))}
   await act(async()=>render());
   assert.ok(document.body.textContent.includes('Trial Premium aktif'));assert.ok(!document.body.textContent.includes('Langganan Premium aktif'));
   assert.ok(document.querySelector('.account-badge').textContent.includes('Trial Premium'));
+  assert.ok(document.querySelector('.profile-dialog'));assert.equal(document.querySelectorAll('.profile-settings-group[open]').length,0);
+  await click(document.querySelector('.profile-settings-group summary'));assert.ok(document.querySelector('.profile-settings-group').open);
   const file=new File([new Uint8Array([255,216,255,224])],'my-photo.jpg',{type:'image/jpeg'});
   const input=document.querySelector('.avatar-file-input');
   Object.defineProperty(input,'files',{value:[file],configurable:true});await act(async()=>input.dispatchEvent(new dom.window.Event('change',{bubbles:true})));

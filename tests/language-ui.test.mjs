@@ -15,7 +15,7 @@ test('language switches throughout the app, persists after reload, and preserves
  const text=()=>document.body.textContent;
  const click=async(element)=>{assert.ok(element,'Expected a clickable element');await act(async()=>element.click())};
  const nav=label=>[...document.querySelectorAll('.sidebar nav a')].find(b=>b.textContent.startsWith(label));
- const choose=async(value)=>{await act(async()=>{const select=document.querySelector('.header-right .language-switch select');select.value=value;select.dispatchEvent(new dom.window.Event('change',{bubbles:true}))})};
+ const choose=async(value)=>{await act(async()=>{const select=document.querySelector('.profile-dialog .language-switch select')||document.querySelector('.header-right .language-switch select');select.value=value;select.dispatchEvent(new dom.window.Event('change',{bubbles:true}))})};
  try{
   await server.pluginContainer.buildStart({});
   await act(async()=>{app=await server.ssrLoadModule('/src/main.jsx')});
@@ -39,15 +39,19 @@ test('language switches throughout the app, persists after reload, and preserves
   await click(nav('Themes'));assert.ok(text().includes('Cute characters'));assert.ok(text().includes('As peaceful as a morning garden.'));
   await click(nav('Subscription'));assert.ok(text().includes('Unlimited savings goals'));assert.equal(document.querySelectorAll('.plan-option').length,4);
   await click(nav('Profile'));assert.ok(document.querySelector('.language-full'));assert.ok(text().includes('Display language'));
+  assert.ok(document.querySelector('.profile-dialog[role="dialog"]'));
+  await choose('id');assert.ok(text().includes('Bahasa tampilan'));await choose('en');
+  await act(async()=>{const closed=new Promise(resolve=>window.addEventListener('popstate',resolve,{once:true}));document.querySelector('.profile-dialog [data-dialog-close]').click();await closed});
   await click(document.querySelector('[aria-controls="financial-assistant-panel"]'));
   assert.ok(document.querySelector('#financial-assistant-panel').textContent.includes('Unlock with Premium'));
-  await choose('id');assert.ok(text().includes('Bahasa tampilan'));assert.ok(text().includes('Buka dengan Premium'));assert.equal(document.documentElement.lang,'id');
+  await choose('id');assert.ok(text().includes('Buka dengan Premium'));assert.equal(document.documentElement.lang,'id');
   await choose('en');
+  await click(nav('Profile'));
   await act(async()=>app.appRoot.unmount());app=null;
   // The saved preference is used before the first render after a reload.
   server.moduleGraph.invalidateAll();
   await act(async()=>{app=await server.ssrLoadModule('/src/main.jsx')});
-  assert.equal(document.documentElement.lang,'en');assert.ok(text().includes('Your account, your own space.'));assert.ok(document.title.includes('Your money'));
+  assert.equal(document.documentElement.lang,'en');assert.ok(text().includes('Profile & settings'));assert.ok(document.querySelector('.profile-dialog'));assert.ok(document.title.includes('Your money'));
   assert.equal(window.location.pathname,'/demo/profil');
  }finally{
   if(app)await act(async()=>app.appRoot.unmount());

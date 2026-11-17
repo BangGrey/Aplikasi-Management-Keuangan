@@ -52,6 +52,11 @@ test('account deep links resume after login, use clean URLs and return home on l
     await act(async()=>{app=await server.ssrLoadModule('/src/main.jsx')});
     await act(async()=>resolveSession({data:{session}}));
     assert.equal(window.location.pathname,'/profil');assert.ok(document.querySelector('.language-full'));
+    assert.ok(document.querySelector('.profile-dialog'));assert.ok(document.querySelector('.stats'),'direct profile links open over the overview');
+    assert.equal(document.querySelectorAll('.profile-settings-group').length,3);
+    assert.equal(document.querySelectorAll('.profile-settings-group[open]').length,0,'settings stay collapsed until needed');
+    document.querySelectorAll('.profile-settings-group')[1].open=true;
+    assert.ok(document.querySelector('#profile-username'));
     await act(async()=>notify('SIGNED_OUT',null));
     assert.equal(window.location.pathname,'/beranda');assert.ok(document.querySelector('.landing-page'));
     // Legacy section links still open their section, including after reload.
