@@ -1,7 +1,12 @@
-export function paymentConfiguration(key,isProduction=false){
+export function paymentConfiguration(key,isProduction=false,signatureSecret){
  const environment=isProduction?'production':'sandbox';
- const ready=typeof key==='string'&&key.trim().startsWith(isProduction?'Mid-server-':'SB-Mid-server-');
- return {environment,ready};
+ // Keys are opaque: scoped keys must not be rejected based on legacy prefixes.
+ // The selected environment determines the API host; Midtrans validates the key.
+ const serverKeyConfigured=typeof key==='string'&&!!key.trim();
+ const signatureSecretConfigured=typeof signatureSecret==='string'&&!!signatureSecret.trim();
+ return {environment,ready:serverKeyConfigured,serverKeyConfigured,signatureSecretConfigured,
+  signatureVerification:signatureSecretConfigured?'signature_secret':serverKeyConfigured?'legacy_server_key':'unconfigured',
+  configurationIssue:serverKeyConfigured?null:'missing_server_key'};
 }
 export function paymentUrls(site){
  const url=new URL(site);

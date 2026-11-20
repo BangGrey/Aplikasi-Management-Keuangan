@@ -31,7 +31,7 @@ Pengguna Premium melihat **Perpanjang**, tanggal berakhir, dan perkiraan masa ak
 
 Frontend hanya mengirim `planId`; harga dan durasi ditentukan katalog server `src/subscription-plans.mjs` dan dibatasi lagi oleh SQL. Midtrans menerima nominal yang sama dengan pesanan. Webhook memverifikasi tanda tangan, mengambil status langsung dari Midtrans, mencocokkan nominal/order, lalu menjalankan RPC server. Klik tombol bayar atau kembali dari Midtrans tidak langsung mengaktifkan Premium. Memilih paket pada halaman pengenalan meminta pengguna mendaftar/masuk, kemudian memilih pembayaran dari akun.
 
-Untuk uji pembelian, pasang Server Key Sandbox dan `MIDTRANS_IS_PRODUCTION=false` pada Netlify Functions, lalu redeploy. Halaman Langganan menampilkan mode dari server, kembali ke halaman yang sama setelah Snap, dan menyediakan **Periksa pembayaran** jika webhook terlambat. Settlement/capture yang terverifikasi mengaktifkan Premium pada akun Supabase sesuai paket, termasuk untuk transaksi Sandbox; tidak ada perpindahan dana nyata pada Sandbox. Baca [langkah uji pembelian Sandbox](SETUP.md#uji-pembelian-premium-di-sandbox-pada-website-netlify). Tidak memerlukan migrasi baru jika `subscription-plans.sql` sudah diterapkan.
+Untuk uji pembelian, pasang `MIDTRANS_SERVER_KEY`, `MIDTRANS_SIGNATURE_SECRET_KEY` dari Access Keys **Sandbox**, dan `MIDTRANS_IS_PRODUCTION=false` pada Netlify Functions, lalu redeploy. Nilai harus tersedia untuk konteks Production Netlify agar domain utama bisa membacanya. Server Key baru diterima tanpa asumsi awalan; Signature Secret Key memverifikasi webhook, sementara Server Key mengotorisasi API. Endpoint `payment-config` menyediakan diagnosis keberadaan konfigurasi tanpa mengungkap kunci. Halaman Langganan menampilkan mode dari server, kembali ke halaman yang sama setelah Snap, dan menyediakan **Periksa pembayaran** jika webhook terlambat. Settlement/capture yang terverifikasi mengaktifkan Premium pada akun Supabase sesuai paket, termasuk untuk transaksi Sandbox; tidak ada perpindahan dana nyata pada Sandbox. Baca [langkah uji pembelian Sandbox](SETUP.md#uji-pembelian-premium-di-sandbox-pada-website-netlify). Tidak memerlukan migrasi baru jika `subscription-plans.sql` sudah diterapkan.
 
 ## Pilihan bahasa
 
@@ -128,7 +128,7 @@ RLS membatasi setiap pengguna ke data sendiri. Pengguna trial/lunas dapat menuli
 1. Push proyek ke repositori Git, lalu import repositori di Netlify. Konfigurasi build sudah tersedia di `netlify.toml`.
 2. Atur environment variables di dashboard Netlify:
    - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` untuk build.
-   - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MIDTRANS_SERVER_KEY`, `MIDTRANS_IS_PRODUCTION=false` untuk Functions.
+   - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MIDTRANS_SERVER_KEY`, `MIDTRANS_SIGNATURE_SECRET_KEY`, `MIDTRANS_IS_PRODUCTION=false` untuk Functions.
    - `URL` disediakan Netlify secara otomatis; digunakan sebagai URL kembali setelah pembayaran.
 3. Redeploy sesudah mengubah environment variables.
 4. Di dashboard Midtrans Sandbox → Settings → Configuration, atur Payment Notification URL ke `https://DOMAIN-ANDA.netlify.app/.netlify/functions/midtrans-webhook`.

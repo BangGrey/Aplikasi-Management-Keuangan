@@ -40,7 +40,7 @@ function webhookFixture(plan,{status='settlement',fraud='accept',verifiedAmount=
  const applied=[],queries=[];
  const body={order_id:'KT-test-order',status_code:'200',gross_amount:plan.amount+'.00'};
  body.signature_key=createHash('sha512').update(`${body.order_id}${body.status_code}${body.gross_amount}test-key`).digest('hex');
- const handler=createWebhookHandler({getAdmin:()=>({from:()=>({select(){return this},eq(){return this},single:async()=>({data:{id:body.order_id,amount:plan.amount},error:null})}),rpc:async(name,args)=>{applied.push({name,args});return {error:null}}}),request:async url=>{queries.push(url);return {ok:true,json:async()=>({status_code:'200',order_id:body.order_id,gross_amount:String(verifiedAmount),transaction_status:status,fraud_status:fraud,currency:'IDR'})}},serverKey:()=> 'test-key',authorization:()=> 'Basic test-only',isProduction:()=>false});
+ const handler=createWebhookHandler({getAdmin:()=>({from:()=>({select(){return this},eq(){return this},single:async()=>({data:{id:body.order_id,amount:plan.amount},error:null})}),rpc:async(name,args)=>{applied.push({name,args});return {error:null}}}),request:async url=>{queries.push(url);return {ok:true,json:async()=>({status_code:'200',order_id:body.order_id,gross_amount:String(verifiedAmount),transaction_status:status,fraud_status:fraud,currency:'IDR'})}},serverKey:()=> 'test-key',signatureSecret:()=> '',authorization:()=> 'Basic test-only',isProduction:()=>false});
  return {handler,applied,queries,event:{httpMethod:'POST',body:JSON.stringify(body)}};
 }
 test('signed notifications activate all plan prices only after verified paid status',async()=>{

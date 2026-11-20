@@ -113,6 +113,7 @@ Tes: daftar → konfirmasi email → masuk → catat pemasukan dan pengeluaran s
 
 ```dotenv
 MIDTRANS_SERVER_KEY=ISI_SERVER_KEY_SANDBOX
+MIDTRANS_SIGNATURE_SECRET_KEY=ISI_SIGNATURE_SECRET_KEY_SANDBOX
 MIDTRANS_IS_PRODUCTION=false
 ```
 
@@ -133,9 +134,9 @@ Referensi: [Dashboard Midtrans](https://docs.midtrans.com/docs/dashboard-basics)
 
 Pembayaran uji yang telah diverifikasi mengaktifkan Premium pada akun Supabase yang melakukan checkout, sesuai durasi paket. Transaksinya tetap transaksi **Sandbox tanpa perpindahan uang nyata**. Sandbox menjadi mode bawaan jika `MIDTRANS_IS_PRODUCTION` belum diisi; agar pasti, isi eksplisit `false`.
 
-1. Buka dashboard Midtrans, pilih **Sandbox** pada pilihan environment. Buka **Settings → Access Keys**, salin **Server Key Sandbox** (umumnya berawalan `SB-Mid-server-`). Client Key tidak dibutuhkan untuk hosted Snap redirect yang dipakai aplikasi.
-2. Di **Netlify → Project configuration → Environment variables**, pasang `MIDTRANS_SERVER_KEY` menggunakan Server Key tersebut dan `MIDTRANS_IS_PRODUCTION=false`, dengan scope **Functions** pada konteks deploy yang digunakan. Pastikan `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` juga terpasang pada Functions. Simpan kunci langsung di dashboard, tidak di GitHub atau variabel `VITE_`.
-3. Redeploy Netlify agar Functions memakai nilai terbaru. Setelah Published, buka `https://ruangkeuanganmu.netlify.app/.netlify/functions/payment-config`. Respons yang diharapkan adalah `{"environment":"sandbox","ready":true}`. `ready` memeriksa keberadaan/format kunci untuk mode tersebut; validitas kredensial yang sesungguhnya baru diketahui saat menghubungi Midtrans. Endpoint ini tidak mengembalikan isi kunci.
+1. Buka dashboard Midtrans, pilih **Sandbox** pada pilihan environment. Buka **Settings → Access Keys**, salin **Server Key** dan **Signature Secret Key**. Untuk Server Key baru, pilih **Snap Checkout: Write**, **Core API: Read**, serta produk/capability lain **None**. Client Key tidak dibutuhkan untuk hosted Snap redirect yang dipakai aplikasi. Server Key baru dapat memiliki format berbeda dari kunci lama; environment dipilih lewat pengaturan Sandbox/Production, bukan ditentukan dari awalan key.
+2. Di **Netlify → Project configuration → Environment variables**, pasang `MIDTRANS_SERVER_KEY` menggunakan Server Key tersebut, `MIDTRANS_SIGNATURE_SECRET_KEY` menggunakan Signature Secret Key, dan `MIDTRANS_IS_PRODUCTION=false`. Semua harus tersedia pada scope **Functions** (atau **All scopes**) dan konteks **Production** Netlify karena domain utama merupakan production deploy Netlify walaupun Midtrans memakai Sandbox. Jika tidak membedakan konteks, gunakan nilai sama untuk semua deploy contexts. Pastikan `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` juga terpasang pada Functions. Simpan kunci langsung di dashboard, tidak di GitHub atau variabel `VITE_`.
+3. Redeploy Netlify agar Functions memakai nilai terbaru. Setelah Published, buka `https://ruangkeuanganmu.netlify.app/.netlify/functions/payment-config`. Pastikan `environment` bernilai `sandbox`, `ready` dan `serverKeyConfigured` bernilai `true`, serta `signatureSecretConfigured` bernilai `true`. Jika `configurationIssue` bernilai `missing_server_key`, Function belum menerima nilai `MIDTRANS_SERVER_KEY`: periksa nama variabel, scope, konteks Production, dan apakah sudah redeploy. `ready` hanya memeriksa keberadaan kunci; validitas dan izin kredensial sesungguhnya diperiksa Midtrans saat API dipanggil. Endpoint ini tidak mengembalikan isi, awalan, atau panjang kunci.
 4. Di dashboard Midtrans mode Sandbox, isi **Payment Notification URL**: `https://ruangkeuanganmu.netlify.app/.netlify/functions/midtrans-webhook`. Isi **Finish Redirect URL**: `https://ruangkeuanganmu.netlify.app/langganan`. Checkout baru juga memasang `X-Override-Notification` menuju webhook domain Netlify dan finish callback menuju halaman Langganan dengan identitas pesanan.
 5. Masuk ke **akun pengguna** di website, buka **Langganan**, pastikan tampil **Mode Sandbox · pembayaran uji**, pilih paket, lalu klik Berlangganan/Perpanjang. Halaman pembayaran harus berada di `app.sandbox.midtrans.com`.
 6. Untuk pengujian sederhana, pilih transfer bank Virtual Account yang tersedia, catat bank dan nomor VA yang ditampilkan, lalu buka [simulator Sandbox resmi](https://simulator.sandbox.midtrans.com/). Pilih simulator yang sesuai dan simulasikan pembayaran berhasil. Ikuti [panduan pengujian Midtrans](https://docs.midtrans.com/docs/testing-payment-on-sandbox) untuk metode lain; tidak perlu transfer uang sungguhan.
@@ -144,7 +145,9 @@ Pembayaran uji yang telah diverifikasi mengaktifkan Premium pada akun Supabase y
 
 Jika gagal membuat checkout: periksa Server Key dan environment, Functions log, serta apakah `supabase/subscription-plans.sql` sudah diterapkan. Jika simulasi sudah berhasil tetapi Premium belum aktif: periksa transaksi dan Notification Log Midtrans, lalu gunakan Periksa pembayaran. Tidak perlu migrasi SQL baru untuk perubahan alur Sandbox ini jika subscription-plans.sql sebelumnya sudah berhasil dijalankan. Jangan berganti environment sebelum menyelesaikan transaksi uji yang tertunda; server menolak verifikasi pesanan baru pada environment yang berbeda.
 
-Pengujian otomatis mencakup checkout Sandbox → status menunggu → settlement terverifikasi → aktivasi nyata pada PostgreSQL lokal → webhook terlambat/duplikat tanpa penambahan durasi ganda. Kredensial dan pengujian transaksi Midtrans online tetap harus dijalankan di akun merchant setelah environment dikonfigurasi. Untuk produksi nanti, ganti kedua nilai Midtrans ke Server Key Production dan `MIDTRANS_IS_PRODUCTION=true`, periksa notification URL pada dashboard Production, lalu redeploy.
+Pengujian otomatis mencakup checkout Sandbox → status menunggu → settlement terverifikasi → aktivasi nyata pada PostgreSQL lokal → webhook terlambat/duplikat tanpa penambahan durasi ganda. Kredensial dan pengujian transaksi Midtrans online tetap harus dijalankan di akun merchant setelah environment dikonfigurasi. Untuk produksi nanti, gunakan Server Key dan Signature Secret Key dari mode Production, set `MIDTRANS_IS_PRODUCTION=true`, periksa notification URL pada dashboard Production, lalu redeploy.
+
+Sejak perubahan Access Keys Midtrans pada 28 Oktober 2026, **Server Key** digunakan untuk otorisasi API, sedangkan **Signature Secret Key** digunakan untuk verifikasi tanda tangan webhook. Handler memakai `MIDTRANS_SIGNATURE_SECRET_KEY` jika diisi. Fallback ke Server Key dipertahankan hanya saat secret terpisah belum diisi agar integrasi lama (yang kedua nilainya sama) tetap berjalan. Untuk Server Key hasil Generate baru, isi secret terpisah tersebut. Jangan mengganti Signature Secret Key dengan nilai `signature_key` dari payload transaksi. Referensi: [Access Keys Midtrans](https://docs.midtrans.com/docs/access-keys).
 
 ## 6. OpenAI
 
@@ -187,6 +190,7 @@ Siapkan variabel berikut di Netlify saat membuat/import project. Jika tersedia p
 | `SUPABASE_ANON_KEY` | Publishable/anon key yang sama dengan frontend | Functions; nilai publik |
 | `SUPABASE_SERVICE_ROLE_KEY` | Secret/service-role key | Functions; rahasia |
 | `MIDTRANS_SERVER_KEY` | Server key Sandbox | Functions; rahasia |
+| `MIDTRANS_SIGNATURE_SECRET_KEY` | Signature Secret Key dari Access Keys Sandbox | Functions; rahasia |
 | `MIDTRANS_IS_PRODUCTION` | `false` | Functions |
 | `OPENAI_API_KEY` | Project API key | Functions; rahasia |
 | `OPENAI_MODEL` | `gpt-5-mini` | Functions |

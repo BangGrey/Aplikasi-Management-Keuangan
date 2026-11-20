@@ -9,7 +9,7 @@ import {createWebhookHandler} from '../netlify/functions/midtrans-webhook.mjs';
 import {hasPaidSubscription} from '../src/premium.mjs';
 
 test('Sandbox checkout and verified settlement update real PostgreSQL orders and Premium exactly once, even before a delayed webhook',async()=>{
- const database=new PGlite(),user='10000000-0000-4000-8000-000000000001',serverKey='SB-Mid-server-test';
+ const database=new PGlite(),user='10000000-0000-4000-8000-000000000001',serverKey='opaque-new-scoped-key',signatureSecret='dedicated-signature-secret';
  let settled=false,orderId;const requests=[];
  const profile=async()=>(await database.query('select * from profiles where id=$1',[user])).rows[0];
  const db={auth:{getUser:async()=>({data:{user:{id:user,email:'user@example.test'}},error:null})},
@@ -43,8 +43,8 @@ test('Sandbox checkout and verified settlement update real PostgreSQL orders and
   assert.equal(hasPaidSubscription(paidProfile,{user:{id:user}}),true);
   assert.equal((await database.query("select paid_until between now()+interval '3 months'-interval '2 seconds' and now()+interval '3 months'+interval '2 seconds' as valid from profiles where id=$1",[user])).rows[0].valid,true);
   assert.equal((await database.query('select status from orders where id=$1',[orderId])).rows[0].status,'paid');
-  const body={order_id:orderId,status_code:'200',gross_amount:'60000.00'};body.signature_key=createHash('sha512').update(`${body.order_id}${body.status_code}${body.gross_amount}${serverKey}`).digest('hex');
-  const webhook=createWebhookHandler({...shared,serverKey:()=>serverKey});
+  const body={order_id:orderId,status_code:'200',gross_amount:'60000.00'};body.signature_key=createHash('sha512').update(`${body.order_id}${body.status_code}${body.gross_amount}${signatureSecret}`).digest('hex');
+  const webhook=createWebhookHandler({...shared,serverKey:()=>serverKey,signatureSecret:()=>signatureSecret});
   assert.equal((await webhook({httpMethod:'POST',body:JSON.stringify(body)})).statusCode,200);
   await status(event);assert.equal(new Date((await profile()).paid_until).toISOString(),paidUntil);
   assert.ok(requests.every(url=>url.includes('.sandbox.midtrans.com/')));

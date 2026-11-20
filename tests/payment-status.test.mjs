@@ -3,16 +3,20 @@ import assert from 'node:assert/strict';
 import {createPaymentConfigHandler} from '../netlify/functions/payment-config.mjs';
 import {createPaymentStatusHandler} from '../netlify/functions/payment-status.mjs';
 import {createCheckoutHandler} from '../netlify/functions/checkout.mjs';
-import {production} from '../netlify/lib/common.mjs';
+import {production,authHeader} from '../netlify/lib/common.mjs';
 
 test('payment configuration defaults to Sandbox and never exposes server credentials',async()=>{
  const before=process.env.MIDTRANS_IS_PRODUCTION;
  try{delete process.env.MIDTRANS_IS_PRODUCTION;assert.equal(production(),false)}finally{if(before===undefined)delete process.env.MIDTRANS_IS_PRODUCTION;else process.env.MIDTRANS_IS_PRODUCTION=before}
- for(const [key,mode,ready] of [['',false,false],['SB-Mid-server-test',false,true],['Mid-server-test',false,false],['Mid-server-test',true,true],['SB-Mid-server-test',true,false]]){
-  const handler=createPaymentConfigHandler({serverKey:()=>key,isProduction:()=>mode}),response=await handler({httpMethod:'GET'});
-  assert.deepEqual(JSON.parse(response.body),{environment:mode?'production':'sandbox',ready});
-  assert.ok(!response.body.includes('server-test'));assert.equal((await handler({httpMethod:'POST'})).statusCode,405);
+ for(const [key,mode,ready] of [['',false,false],['  ',false,false],['SB-Mid-server-test',false,true],['Mid-server-new-scoped',false,true],['opaque-key-v2',false,true],['opaque-key-v2',true,true]]){
+  const handler=createPaymentConfigHandler({serverKey:()=>key,signatureSecret:()=> 'signing-secret-test',isProduction:()=>mode}),response=await handler({httpMethod:'GET'});
+  assert.deepEqual(JSON.parse(response.body),{environment:mode?'production':'sandbox',ready,serverKeyConfigured:ready,signatureSecretConfigured:true,signatureVerification:'signature_secret',configurationIssue:ready?null:'missing_server_key'});
+  assert.ok(!response.body.includes('scoped'));assert.ok(!response.body.includes('opaque-key'));assert.ok(!response.body.includes('signing-secret-test'));assert.equal((await handler({httpMethod:'POST'})).statusCode,405);
  }
+ const legacy=createPaymentConfigHandler({serverKey:()=> 'legacy-key',signatureSecret:()=>'',isProduction:()=>false});
+ assert.equal(JSON.parse((await legacy({httpMethod:'GET'})).body).signatureVerification,'legacy_server_key');
+ const original=process.env.MIDTRANS_SERVER_KEY;
+ try{process.env.MIDTRANS_SERVER_KEY='  opaque-server-key  ';assert.equal(authHeader(),'Basic '+Buffer.from('opaque-server-key:').toString('base64'))}finally{if(original===undefined)delete process.env.MIDTRANS_SERVER_KEY;else process.env.MIDTRANS_SERVER_KEY=original}
 });
 
 function fixture({owner='user-a',authenticated=true,status='settlement',fraud='accept',code='200',amount='60000.00',currency='IDR',savedStatus='pending',orderId='KT-SB-example',mode=false,httpStatus=200,rpcError=null}={}){
@@ -59,17 +63,17 @@ test('status checks enforce login and ownership, validate requests and reuse alr
  assert.equal((await paid.handler({...paid.event,httpMethod:'GET'})).statusCode,405);
 });
 
-test('checkout cannot cross environments and sends an explicit callback and notification URL',async()=>{
+test('checkout selects the API host by environment, supports scoped keys and sends callback URLs',async()=>{
  for(const mode of [false,true]){
-  const requests=[],orders=[];let key=mode?'Mid-server-test':'SB-Mid-server-test';
+  const requests=[],orders=[];let key='opaque-scoped-key',reject=false;
   const handler=createCheckoutHandler({getAdmin:()=>({auth:{getUser:async()=>({data:{user:{id:'user-a',email:'user@example.test'}}})},from:()=>({insert:async order=>{orders.push(order);return {error:null}}})}),newId:()=> 'example',siteUrl:()=> 'https://example.netlify.app',isProduction:()=>mode,serverKey:()=>key,authorization:()=> 'Basic test',request:async(url,options)=>{
-   requests.push({url,options,payload:JSON.parse(options.body)});return {ok:true,json:async()=>({redirect_url:`https://app.${mode?'':'sandbox.'}midtrans.com/snap/test`})};
+   requests.push({url,options,payload:JSON.parse(options.body)});if(reject)return {ok:false,status:401};return {ok:true,json:async()=>({redirect_url:`https://app.${mode?'':'sandbox.'}midtrans.com/snap/test`})};
   }});
   const event={httpMethod:'POST',headers:{authorization:'Bearer test'},body:'{"planId":"quarterly"}'};
   const response=await handler(event),data=JSON.parse(response.body);assert.equal(response.statusCode,200);
   assert.equal(data.orderId,`KT-${mode?'LIVE':'SB'}-example`);
   assert.equal(requests[0].options.headers['X-Override-Notification'],'https://example.netlify.app/.netlify/functions/midtrans-webhook');
   assert.equal(requests[0].payload.callbacks.finish,`https://example.netlify.app/langganan?payment_order=${data.orderId}`);
-  key=mode?'SB-Mid-server-test':'Mid-server-test';assert.equal((await handler(event)).statusCode,503);assert.equal(requests.length,1);
+  reject=true;const denied=await handler(event);assert.equal(denied.statusCode,502);assert.equal(JSON.parse(denied.body).code,'midtrans_auth_failed');assert.equal(requests.length,2);key='';assert.equal((await handler(event)).statusCode,503);assert.equal(requests.length,2);
  }
 });

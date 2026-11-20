@@ -1,5 +1,7 @@
 {
  "Mode Sandbox · pembayaran uji":"Sandbox mode · test payment",
+ "Kredensial pembayaran belum dapat digunakan. Hubungi bantuan layanan.":"Payment credentials are not available. Please contact support.",
+ "Izin pembayaran belum tersedia. Hubungi bantuan layanan.":"Payment permissions are not available. Please contact support.",
  "Tidak menggunakan uang sungguhan. Pembayaran uji yang berhasil akan mengaktifkan Premium sesuai paket.":"No real money is used. A successful test payment activates Premium for the selected plan.",
  "Pembayaran terverifikasi. Premium sudah diaktifkan sesuai paket.":"Payment verified. Premium has been activated for your plan.",
  "Belum ada transaksi pembayaran.":"No payment transactions yet.",
