@@ -129,6 +129,23 @@ https://DOMAIN-ANDA.netlify.app/.netlify/functions/midtrans-webhook
 
 Referensi: [Dashboard Midtrans](https://docs.midtrans.com/docs/dashboard-basics), [webhook](https://docs.midtrans.com/docs/https-notification-webhooks).
 
+### Uji pembelian Premium di Sandbox pada website Netlify
+
+Pembayaran uji yang telah diverifikasi mengaktifkan Premium pada akun Supabase yang melakukan checkout, sesuai durasi paket. Transaksinya tetap transaksi **Sandbox tanpa perpindahan uang nyata**. Sandbox menjadi mode bawaan jika `MIDTRANS_IS_PRODUCTION` belum diisi; agar pasti, isi eksplisit `false`.
+
+1. Buka dashboard Midtrans, pilih **Sandbox** pada pilihan environment. Buka **Settings → Access Keys**, salin **Server Key Sandbox** (umumnya berawalan `SB-Mid-server-`). Client Key tidak dibutuhkan untuk hosted Snap redirect yang dipakai aplikasi.
+2. Di **Netlify → Project configuration → Environment variables**, pasang `MIDTRANS_SERVER_KEY` menggunakan Server Key tersebut dan `MIDTRANS_IS_PRODUCTION=false`, dengan scope **Functions** pada konteks deploy yang digunakan. Pastikan `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` juga terpasang pada Functions. Simpan kunci langsung di dashboard, tidak di GitHub atau variabel `VITE_`.
+3. Redeploy Netlify agar Functions memakai nilai terbaru. Setelah Published, buka `https://ruangkeuanganmu.netlify.app/.netlify/functions/payment-config`. Respons yang diharapkan adalah `{"environment":"sandbox","ready":true}`. `ready` memeriksa keberadaan/format kunci untuk mode tersebut; validitas kredensial yang sesungguhnya baru diketahui saat menghubungi Midtrans. Endpoint ini tidak mengembalikan isi kunci.
+4. Di dashboard Midtrans mode Sandbox, isi **Payment Notification URL**: `https://ruangkeuanganmu.netlify.app/.netlify/functions/midtrans-webhook`. Isi **Finish Redirect URL**: `https://ruangkeuanganmu.netlify.app/langganan`. Checkout baru juga memasang `X-Override-Notification` menuju webhook domain Netlify dan finish callback menuju halaman Langganan dengan identitas pesanan.
+5. Masuk ke **akun pengguna** di website, buka **Langganan**, pastikan tampil **Mode Sandbox · pembayaran uji**, pilih paket, lalu klik Berlangganan/Perpanjang. Halaman pembayaran harus berada di `app.sandbox.midtrans.com`.
+6. Untuk pengujian sederhana, pilih transfer bank Virtual Account yang tersedia, catat bank dan nomor VA yang ditampilkan, lalu buka [simulator Sandbox resmi](https://simulator.sandbox.midtrans.com/). Pilih simulator yang sesuai dan simulasikan pembayaran berhasil. Ikuti [panduan pengujian Midtrans](https://docs.midtrans.com/docs/testing-payment-on-sandbox) untuk metode lain; tidak perlu transfer uang sungguhan.
+7. Kembali ke website melalui tombol kembali ke merchant pada halaman pembayaran. Halaman Langganan memeriksa status ke server dan melakukan beberapa pemeriksaan ulang untuk status menunggu. Tombol **Periksa pembayaran** dapat dipakai jika notifikasi terlambat atau jendela pembayaran sudah ditutup. Server hanya membaca pesanan milik pengguna tersebut, meminta status terbaru ke Midtrans, lalu memanggil `activate_subscription` setelah status/nominal/mata uang sesuai. Parameter status dari browser tidak bisa mengaktifkan Premium.
+8. Pastikan muncul pesan pembayaran terverifikasi, tombol menjadi **Perpanjang**, dan akun mendapat akses Premium. Di Supabase, `orders.status` berubah menjadi `paid`, `paid_at` terisi, dan `profiles.paid_until` bertambah. Pesanan baru Sandbox memakai awalan `KT-SB-`; Production memakai `KT-LIVE-`. Kirim ulang webhook atau periksa ulang pesanan yang sama tidak menambah durasi lagi.
+
+Jika gagal membuat checkout: periksa Server Key dan environment, Functions log, serta apakah `supabase/subscription-plans.sql` sudah diterapkan. Jika simulasi sudah berhasil tetapi Premium belum aktif: periksa transaksi dan Notification Log Midtrans, lalu gunakan Periksa pembayaran. Tidak perlu migrasi SQL baru untuk perubahan alur Sandbox ini jika subscription-plans.sql sebelumnya sudah berhasil dijalankan. Jangan berganti environment sebelum menyelesaikan transaksi uji yang tertunda; server menolak verifikasi pesanan baru pada environment yang berbeda.
+
+Pengujian otomatis mencakup checkout Sandbox → status menunggu → settlement terverifikasi → aktivasi nyata pada PostgreSQL lokal → webhook terlambat/duplikat tanpa penambahan durasi ganda. Kredensial dan pengujian transaksi Midtrans online tetap harus dijalankan di akun merchant setelah environment dikonfigurasi. Untuk produksi nanti, ganti kedua nilai Midtrans ke Server Key Production dan `MIDTRANS_IS_PRODUCTION=true`, periksa notification URL pada dashboard Production, lalu redeploy.
+
 ## 6. OpenAI
 
 1. Masuk https://platform.openai.com, pilih/buat project untuk aplikasi.

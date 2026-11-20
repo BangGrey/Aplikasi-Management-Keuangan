@@ -1,0 +1,16 @@
+{
+ "Mode Sandbox · pembayaran uji":"Sandbox mode · test payment",
+ "Tidak menggunakan uang sungguhan. Pembayaran uji yang berhasil akan mengaktifkan Premium sesuai paket.":"No real money is used. A successful test payment activates Premium for the selected plan.",
+ "Pembayaran terverifikasi. Premium sudah diaktifkan sesuai paket.":"Payment verified. Premium has been activated for your plan.",
+ "Belum ada transaksi pembayaran.":"No payment transactions yet.",
+ "Pembayaran belum berhasil atau sudah tidak berlaku. Silakan buat pembayaran baru.":"The payment was unsuccessful or is no longer valid. Please create a new payment.",
+ "Pembayaran masih menunggu penyelesaian atau verifikasi.":"Payment is awaiting completion or verification.",
+ "Pembayaran belum tersedia. Silakan coba lagi nanti.":"Payments are not available yet. Please try again later.",
+ "Memeriksa pembayaran…":"Checking payment…",
+ "Periksa pembayaran":"Check payment",
+ "Muat ulang pembayaran":"Reload payment settings",
+ "Status pembayaran belum dapat diperiksa. Silakan coba lagi.":"Unable to check the payment status. Please try again.",
+ "Mode pembayaran telah berubah. Hubungi bantuan layanan untuk pesanan ini.":"The payment environment has changed. Contact support for this order.",
+ "Pesanan tidak ditemukan.":"Order not found.",
+ "Pembayaran belum dikonfigurasi untuk mode yang dipilih.":"Payments are not configured for the selected environment."
+}

@@ -4,7 +4,8 @@ import experienceEnglish from './translations/experience-en.json' with {type:'js
 import basicChatEnglish from './translations/basic-chat-en.json' with {type:'json'};
 import authEnglish from './translations/auth-en.json' with {type:'json'};
 import navigationEnglish from './translations/navigation-en.json' with {type:'json'};
-const english={...baseEnglish,...marketingEnglish,...experienceEnglish,...basicChatEnglish,...authEnglish,...navigationEnglish};
+import paymentEnglish from './translations/payment-en.json' with {type:'json'};
+const english={...baseEnglish,...marketingEnglish,...experienceEnglish,...basicChatEnglish,...authEnglish,...navigationEnglish,...paymentEnglish};
 let language='id';
 export const getLanguage=()=>language;
 export const getLocale=()=>language==='en'?'en-US':'id-ID';

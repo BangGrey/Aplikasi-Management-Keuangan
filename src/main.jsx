@@ -131,7 +131,7 @@ function App() {useLanguage();
  {page === 'Ringkasan' && <button className="gold-overview-link" onClick={() => {setSavingsMode('gold');setPage('Tabungan');}}><Coins size={22} /><span>{tr("Punya tabungan emas? Catat gramnya dan pantau estimasi buyback.")}</span><small>{tr("Lihat tabungan emas")}</small><ChevronRight size={16} /></button>}
 
  {page === 'Tema tampilan' && <ThemePicker value={selectedTheme.id} onChange={chooseTheme} premium={premium} onUpgrade={() => setPage('Langganan')} />}
- {page === 'Langganan' && <Subscription premium={paidPremium} trial={trialPremium} profile={profile} demo={demo} busy={busy} loading={!!session&&profile?.id!==session.user.id} selected={selectedPlan} onSelect={setSelectedPlan} onCheckout={checkout} onRefresh={()=>refresh(session)}/>}
+ {page === 'Langganan' && <Subscription session={session} premium={paidPremium} trial={trialPremium} profile={profile} demo={demo} busy={busy} loading={!!session&&profile?.id!==session.user.id} selected={selectedPlan} onSelect={setSelectedPlan} onCheckout={checkout} onRefresh={()=>refresh(session)}/>}
  <footer className="app-footer"><span><Flower2 size={15}/>{tr("Dibuat untuk hidup yang lebih teratur, bukan lebih rumit.")}</span><ServiceInfo/></footer></main></div></>}
 
  {receipt && <Receipt transaction={receipt} onClose={() => setReceipt(null)} />}

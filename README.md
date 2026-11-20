@@ -31,6 +31,8 @@ Pengguna Premium melihat **Perpanjang**, tanggal berakhir, dan perkiraan masa ak
 
 Frontend hanya mengirim `planId`; harga dan durasi ditentukan katalog server `src/subscription-plans.mjs` dan dibatasi lagi oleh SQL. Midtrans menerima nominal yang sama dengan pesanan. Webhook memverifikasi tanda tangan, mengambil status langsung dari Midtrans, mencocokkan nominal/order, lalu menjalankan RPC server. Klik tombol bayar atau kembali dari Midtrans tidak langsung mengaktifkan Premium. Memilih paket pada halaman pengenalan meminta pengguna mendaftar/masuk, kemudian memilih pembayaran dari akun.
 
+Untuk uji pembelian, pasang Server Key Sandbox dan `MIDTRANS_IS_PRODUCTION=false` pada Netlify Functions, lalu redeploy. Halaman Langganan menampilkan mode dari server, kembali ke halaman yang sama setelah Snap, dan menyediakan **Periksa pembayaran** jika webhook terlambat. Settlement/capture yang terverifikasi mengaktifkan Premium pada akun Supabase sesuai paket, termasuk untuk transaksi Sandbox; tidak ada perpindahan dana nyata pada Sandbox. Baca [langkah uji pembelian Sandbox](SETUP.md#uji-pembelian-premium-di-sandbox-pada-website-netlify). Tidak memerlukan migrasi baru jika `subscription-plans.sql` sudah diterapkan.
+
 ## Pilihan bahasa
 
 Pilih **ID / EN** di kanan atas atau **Profil → Bahasa tampilan**. Pilihan tersimpan di browser dan langsung berlaku pada navigasi, formulir, tabungan, tema, profil, nota, dan pesan baru dari asisten. Format angka dan tanggal mengikuti bahasa; mata uang tetap rupiah. Nama aplikasi, nama asisten, judul catatan pengguna, nilai kategori database, dan chat sebelumnya tetap tersimpan seperti semula. Tidak memerlukan migrasi Supabase atau environment variable baru.
